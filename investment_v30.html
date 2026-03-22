@@ -1,0 +1,3029 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETF 투자 수익 계산기</title>
+  <style>
+/* ============================================================
+   ETF 투자 수익 계산기 - 스타일시트
+   새 페이지 추가 시 이 파일에 섹션을 추가하거나
+   pages/ 폴더에 별도 CSS를 만들어 사용하세요.
+   ============================================================ */
+
+/* ── 1. CSS 변수 (테마 컬러) ── */
+:root {
+  --bg:     #0f1117;
+  --bg2:    #181c26;
+  --bg3:    #1e2333;
+  --border: #2a3050;
+  --border2:#3a4568;
+  --text:   #e8eaf0;
+  --text2:  #8b92a8;
+  --text3:  #555f7a;
+  --purple: #7c6dfa;
+  --purple2:#5b4fd4;
+  --teal:   #2dd4a0;
+  --amber:  #f5a623;
+  --red:    #f06060;
+  --green:  #4ade80;
+}
+
+/* ── 2. 리셋 & 기본 ── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+h1 { font-size: 20px; font-weight: 600; }
+
+/* ── 3. 레이아웃 ── */
+.header {
+  padding: 22px 28px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--purple);
+}
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  min-height: calc(100vh - 61px);
+}
+.sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 20px 18px;
+  overflow-y: auto;
+}
+.main {
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+/* ── 4. 섹션 & 필드 ── */
+.sec { margin-bottom: 24px; }
+.sec-title {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.field { margin-bottom: 12px; }
+.field-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 5px;
+}
+.field-label .val { font-size: 13px; font-weight: 500; color: var(--text); }
+
+/* ── 5. 입력 컨트롤 ── */
+.input-row { display: flex; align-items: center; gap: 6px; }
+.input-row input[type=range] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--border2);
+  outline: none;
+}
+.input-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--purple);
+  cursor: pointer;
+}
+.num-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+.num-box input[type=number] {
+  width: 72px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 12px;
+  text-align: right;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.num-box input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+.num-box .unit { font-size: 11px; color: var(--text2); white-space: nowrap; }
+
+/* ── 6. 한도 바 & 경고 ── */
+.lbar {
+  height: 3px;
+  border-radius: 99px;
+  background: var(--border);
+  margin-top: 5px;
+  overflow: hidden;
+}
+.lf { height: 100%; border-radius: 99px; background: var(--teal); transition: width .3s; }
+.lf.warn { background: var(--amber); }
+.lf.over { background: var(--red); }
+.lt { font-size: 10px; color: var(--text3); margin-top: 3px; display: flex; justify-content: space-between; }
+.warn-box {
+  font-size: 11px;
+  color: #f7c1c1;
+  background: #501313;
+  border: 1px solid #791f1f;
+  border-radius: 5px;
+  padding: 6px 9px;
+  margin-top: 5px;
+  display: none;
+}
+.warn-box.on { display: block; }
+.disabled-msg {
+  font-size: 11px;
+  color: #f06060;
+  background: rgba(240,96,96,0.08);
+  border: 1px solid rgba(240,96,96,0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+/* ── 7. 메모 박스 ── */
+.tax-note {
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--bg3);
+  border-radius: 5px;
+  padding: 7px 10px;
+  margin-top: 5px;
+  line-height: 1.6;
+  border-left: 2px solid var(--border2);
+}
+.tax-note.red   { border-left-color: var(--red); }
+.tax-note.blue  { border-left-color: var(--purple); }
+.tax-note.green { border-left-color: var(--teal); }
+.row-info { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; color: var(--text2); }
+.row-info .rv { font-weight: 500; color: var(--text); }
+
+/* ── 8. 시나리오 버튼 ── */
+.sc-row { display: flex; gap: 6px; margin-bottom: 12px; }
+.sc-btn {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 12px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.sc-btn.on { background: var(--purple2); border-color: var(--purple); color: #fff; }
+
+/* ── 9. 빠른 금액 선택 버튼 ── */
+.bge-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+.bge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+}
+.bge.on { background: var(--purple2); border-color: var(--purple); color: #fff; }
+
+/* ── 10. 토글 스위치 ── */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 14px;
+}
+.ttrack {
+  position: relative;
+  width: 34px; height: 18px;
+  border-radius: 99px;
+  background: var(--border2);
+  flex-shrink: 0;
+  transition: background .2s;
+  margin-left: auto;
+}
+.ttrack.on { background: var(--purple2); }
+.tthumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .2s;
+  pointer-events: none;
+}
+.ttrack.on .tthumb { transform: translateX(16px); }
+
+/* ── 11. 월 합계 박스 ── */
+.monthly-total {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 9px 12px;
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── 12. 과거 데이터 타임라인 ── */
+.range-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 9px;
+  background: rgba(124,109,250,.2);
+  color: var(--purple);
+  border-radius: 99px;
+  margin-bottom: 6px;
+}
+.tl-wrap { position: relative; height: 52px; margin-bottom: 4px; }
+.tl-year-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 8px;
+  padding: 0 2px;
+  position: relative;
+}
+.crisis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 12px; }
+.ci {
+  display: flex;
+  gap: 6px;
+  padding: 7px 9px;
+  background: var(--bg3);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.ci:hover { border-color: var(--border2); }
+.ci.hl { border-color: var(--purple2); }
+.ci-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; margin-top: 2px; }
+.ci-name { font-size: 11px; font-weight: 500; color: var(--text); }
+.ci-per  { font-size: 10px; color: var(--text3); }
+.ci-desc { font-size: 10px; color: var(--text2); margin-top: 1px; }
+.overlap-info { font-size: 11px; color: var(--text2); margin-bottom: 8px; min-height: 16px; }
+
+/* ── 13. 결과 카드 & 차트 ── */
+.met-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+.met { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; }
+.met-l { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+.met-v { font-size: 16px; font-weight: 600; color: var(--text); }
+.met-v.te { color: var(--teal); }
+.met-v.am { color: var(--amber); }
+
+.tot-box {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 15px;
+  margin-bottom: 12px;
+}
+.ct { font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 10px; }
+.cw { position: relative; width: 100%; }
+
+/* ── 14. 탭 ── */
+.tab-r { display: flex; gap: 4px; margin-bottom: 10px; }
+.tb {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: inherit;
+}
+.tb.on { background: var(--bg3); border-color: var(--purple); color: var(--text); }
+
+/* ── 15. 범례 ── */
+.leg { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.li { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text2); }
+.ld { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── 16. 테이블 ── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.tbl th {
+  font-size: 10px;
+  color: var(--text3);
+  font-weight: 500;
+  padding: 6px 5px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+}
+.tbl th:first-child { text-align: left; }
+.tbl td { padding: 6px 5px; text-align: right; border-top: 1px solid var(--border); color: var(--text2); }
+.tbl td:first-child { text-align: left; color: var(--text); font-weight: 500; }
+.tbl tr:hover td { background: var(--bg3); }
+.tbl .dc { color: var(--teal); font-weight: 500; }
+.tbl .tc { color: var(--purple); font-weight: 500; }
+.tbl .neg { color: var(--red); font-weight: 500; }
+.sb { max-height: 280px; overflow-y: auto; }
+.sb::-webkit-scrollbar { width: 3px; }
+.sb::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── 17. 계좌 행 & 면책 고지 ── */
+.acct-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+.notice {
+  font-size: 10px;
+  color: var(--text3);
+  line-height: 1.7;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border-radius: 7px;
+  margin-top: 4px;
+}
+
+/* ── 18. 헤더 ETF 선택 ── */
+.etf-select {
+  background: #151924;
+  color: #fff;
+  border: 1px solid #2d3648;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  min-width: 190px;
+}
+.mode-badge {
+  font-size: 10px;
+  color: #9ab0d7;
+  background: #121826;
+  border: 1px solid #263248;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+.etf-help {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.45;
+  margin: -4px 0 10px 0;
+  padding: 8px 10px;
+  background: rgba(124,109,250,0.08);
+  border: 1px solid rgba(124,109,250,0.2);
+  border-radius: 8px;
+}
+
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
+
+<!-- ── 헤더 ── -->
+<div class="header">
+  <div class="header-dot"></div>
+  <h1>ETF 투자 수익 계산기</h1>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+    <span style="font-size:11px;color:var(--text3)">ETF 선택</span>
+    <select id="etfSelect" onchange="onETFChange(this.value)" class="etf-select">
+      <option value="QQQ">QQQ (나스닥100 1배)</option>
+      <option value="VOO">VOO (S&amp;P500 1배)</option>
+      <option value="SPY">SPY (S&amp;P500 1배)</option>
+      <option value="SCHD">SCHD (배당성장)</option>
+      <option value="JEPI">JEPI (커버드콜 배당)</option>
+      <option value="QLD">QLD (나스닥100 2배)</option>
+      <option value="USD">USD (반도체 2배)</option>
+      <option value="SOXX">SOXX (미국 반도체 1배)</option>
+      <option value="TQQQ">TQQQ (나스닥100 3배) ⚠️</option>
+      <option value="SOXL">SOXL (반도체 3배) ⚠️</option>
+    </select>
+    <span id="selectedEtfName" style="font-size:11px;color:var(--text3)">QQQ · 만원 단위 설정</span>
+    <span id="taxModeBadge" class="mode-badge">직투 + 절세계좌 대체 ETF 모드</span>
+  </div>
+</div>
+
+<!-- ── 레이아웃 ── -->
+<div class="layout">
+
+  <!-- ── 사이드바 (입력) ── -->
+  <div class="sidebar">
+
+    <!-- 과거 데이터 토글 -->
+    <div class="toggle-wrap" id="toggleWrap">
+      <div>
+        <div style="font-size:12px;font-weight:500">과거 데이터 시나리오</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:1px">OFF 시 수동 수익률 설정</div>
+      </div>
+      <div class="ttrack" id="ttrack"><div class="tthumb"></div></div>
+    </div>
+
+    <!-- 수동 수익률 설정 -->
+    <div id="manualArea">
+      <div class="sec-title">수익률 설정</div>
+      <div id="etfTaxHelp" class="etf-help">미국 직투 ETF를 선택하면 일반계좌는 해당 ETF 직투 기준, ISA·연금저축펀드는 국내상장 추종 ETF 기준으로 자동 계산합니다.</div>
+
+      <!-- 수익 구조 분해 박스 -->
+      <div id="returnBreakdownBox" style="margin-bottom:10px;padding:9px 11px;background:rgba(124,109,250,0.07);border:1px solid rgba(124,109,250,0.2);border-radius:7px;display:none"></div>
+
+      <!-- 시나리오 버튼 -->
+      <div class="sc-row">
+        <button class="sc-btn" onclick="setScenario(0)">보수적</button>
+        <button class="sc-btn on" onclick="setScenario(1)">중립</button>
+        <button class="sc-btn" onclick="setScenario(2)">낙관적</button>
+      </div>
+
+      <!-- 주가 상승률 슬라이더 -->
+      <div class="field">
+        <div class="field-label">주가 상승률 <span class="val" id="priceL">5.5%</span></div>
+        <div class="input-row">
+          <input type="range" min="0" max="40" step="0.1" value="5.5" id="priceS" oninput="onPriceR(this.value)">
+          <div class="num-box">
+            <input type="number" min="0" max="40" step="0.1" value="5.5" id="priceN" oninput="onPriceRN(this.value)">
+            <span class="unit">%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 배당 수익률 슬라이더 -->
+      <div class="field">
+        <div class="field-label">배당 수익률 <span class="val" id="dL">3.5%</span></div>
+        <div class="input-row">
+          <input type="range" min="0" max="15" step="0.1" value="3.5" id="dS" oninput="onD(this.value)">
+          <div class="num-box">
+            <input type="number" min="0" max="15" step="0.1" value="3.5" id="dN" oninput="onDN(this.value)">
+            <span class="unit">%</span>
+          </div>
+        </div>
+        <!-- 배당 정보 박스 -->
+        <div id="divAvgBox" style="margin-top:7px;padding:8px 10px;background:rgba(45,212,160,0.07);border:1px solid rgba(45,212,160,0.2);border-radius:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-size:10px;color:#555f7a">이 ETF 역사적 평균 배당</span>
+            <span id="divAvgVal" style="font-size:13px;font-weight:600;color:#2dd4a0">3.5%</span>
+          </div>
+          <div id="divAvgNote" style="font-size:11px;color:#8b92a8;line-height:1.5">중간 배당 — 배당성장 ETF 평균 (약 3~4%)</div>
+        </div>
+      </div>
+
+      <!-- 총 수익률 자동 계산 표시 -->
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:10px 13px;margin-bottom:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">총 수익률 (자동계산)</div>
+            <div style="font-size:10px;color:var(--text3)">주가상승 <span id="totalPriceP" style="color:var(--purple)">5.5%</span> + 배당 <span id="totalDivP" style="color:var(--teal)">3.5%</span></div>
+          </div>
+          <div id="totalRateDisplay" style="font-size:22px;font-weight:700;color:var(--purple)">9.0%</div>
+        </div>
+        <div style="margin-top:8px;height:6px;border-radius:99px;overflow:hidden;display:flex;gap:2px">
+          <div id="totalBarPrice" style="background:var(--purple);border-radius:99px;transition:width .3s;width:61%"></div>
+          <div id="totalBarDiv"   style="background:var(--teal);border-radius:99px;transition:width .3s;width:39%"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px" id="taxEffNote">
+          일반계좌 배당세 반영 복리 수익률: 주가 5.5% + 배당 3.5%×0.85 = 8.5%
+        </div>
+      </div>
+    </div>
+
+    <!-- 과거 데이터 연도 범위 설정 -->
+    <!-- 과거 데이터 시나리오 -->
+    <div id="histArea" style="display:none">
+
+      <!-- 모드 탭 -->
+      <div style="display:flex;gap:4px;margin-bottom:10px">
+        <button id="crisisModeTab" onclick="setCrisisMode('crisis')"
+          style="flex:1;padding:6px;font-size:11px;border-radius:6px;border:1px solid rgba(124,109,250,0.4);background:rgba(124,109,250,0.15);color:var(--purple);cursor:pointer;font-weight:600">
+          📌 경제위기 시나리오
+        </button>
+        <button id="customModeTab" onclick="setCrisisMode('custom')"
+          style="flex:1;padding:6px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">
+          📅 커스텀 기간 설정
+        </button>
+      </div>
+
+      <!-- 위기 시나리오 패널 -->
+      <div id="crisisModePanel">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px;padding:6px 9px;background:rgba(124,109,250,0.06);border:1px solid rgba(124,109,250,0.15);border-radius:6px;line-height:1.7">
+          💡 <b>선택한 경제위기 직전에 투자 시작</b>했다면?<br>
+          그 시점부터 2024년까지 <b>실제 역사 수익률</b>을 적용하고,<br>
+          이후 ETF 역사 평균으로 <b>목표 나이까지</b> 시뮬레이션해요<br>
+          <span style="color:var(--text3)">같은 카드를 다시 클릭하면 해제돼요</span>
+        </div>
+        <div id="crisisSelectedBanner" style="display:none;margin-bottom:8px;padding:7px 10px;border-radius:6px;font-size:11px;line-height:1.6"></div>
+        <div class="crisis-grid" id="crisisGrid"></div>
+      </div>
+
+      <!-- 커스텀 기간 패널 -->
+      <div id="customModePanel" style="display:none">
+        <div class="tl-wrap"><canvas id="tlCanvas" style="width:100%;height:52px"></canvas></div>
+        <div class="tl-year-row" id="tlYearRow"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="field">
+            <div class="field-label">시작 <span class="val" id="hsL">1995</span></div>
+            <input type="range" min="1990" max="2023" step="1" value="1995" id="hsS" oninput="onHS(this.value)" style="width:100%;margin-top:4px">
+          </div>
+          <div class="field">
+            <div class="field-label">종료 <span class="val" id="heL">2005</span></div>
+            <input type="range" min="1991" max="2024" step="1" value="2005" id="heS" oninput="onHE(this.value)" style="width:100%;margin-top:4px">
+          </div>
+        </div>
+        <div class="range-badge" id="rangeBadge">1995년 ~ 2005년</div>
+        <div class="overlap-info" id="overlapInfo"></div>
+      </div>
+
+      <!-- 수익률 차트 & 통계 (공통) -->
+      <div class="card" style="margin-top:10px">
+        <div class="ct">연도별 수익률</div>
+        <div class="cw" style="height:90px"><canvas id="retChart"></canvas></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px" id="statGrid"></div>
+    </div>
+
+
+    <!-- 투자자 정보 -->
+    <div class="sec" id="investorInfoSec">
+      <div class="sec-title" id="investorInfoTitle">투자자 정보</div>
+
+      <!-- 수동 모드 -->
+      <div id="normalInvestorPanel">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="field">
+            <div class="field-label">현재 나이 <span class="val" id="ageL">30세</span></div>
+            <div class="input-row">
+              <input type="range" min="18" max="80" step="1" value="30" id="ageS" oninput="onAge(this.value)">
+              <div class="num-box">
+                <input type="number" min="18" max="80" value="30" id="ageN" oninput="onAgeN(this.value)" style="width:44px">
+                <span class="unit">세</span>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">시작 연도</div>
+            <div class="input-row" style="margin-top:5px">
+              <div class="num-box" style="flex:1">
+                <input type="number" min="2000" max="2100" value="2025" id="startYearN" oninput="onStartYear(this.value)" style="width:60px">
+                <span class="unit">년</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 위기 시나리오 모드 -->
+      <div id="crisisInvestorPanel" style="display:none;margin-bottom:8px">
+
+        <!-- ① 위기명 + 해제 버튼 (한 줄) -->
+        <div id="crisisInvestorHeader" style="display:flex;align-items:center;justify-content:space-between;padding:7px 11px;border-radius:7px;margin-bottom:8px;min-width:0;overflow:hidden;white-space:nowrap"></div>
+
+        <!-- ② 투자 시작 연도(자동) + 당시 나이(직접 입력) 한 줄 나란히 -->
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <!-- 시작 연도 (고정 표시) -->
+          <div style="flex:0 0 auto;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 12px;text-align:center">
+            <div style="font-size:9px;color:var(--text3);margin-bottom:2px;white-space:nowrap">투자 시작</div>
+            <div style="font-size:16px;font-weight:700;color:var(--purple);white-space:nowrap" id="crisisStartYearDisplay">1990년</div>
+          </div>
+          <!-- 구분선 -->
+          <div style="color:var(--text3);font-size:16px;flex:0 0 auto">→</div>
+          <!-- 당시 나이 입력 -->
+          <div style="flex:1;min-width:0">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;white-space:nowrap">
+              당시 나이 <span id="crisisAgeL" style="color:var(--amber);font-weight:600">30세</span>
+            </div>
+            <div class="input-row" style="gap:6px">
+              <input type="range" min="1" max="80" step="1" value="30" id="crisisAgeS" oninput="onCrisisAge(this.value)" style="flex:1">
+              <div class="num-box" style="flex:0 0 auto">
+                <input type="number" min="1" max="80" value="30" id="crisisAgeN" oninput="onCrisisAgeN(this.value)" style="width:40px">
+                <span class="unit">세</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ③ 요약 문구 -->
+        <div id="crisisContextNote" style="font-size:10px;color:var(--text2);line-height:1.7;padding:7px 10px;background:rgba(245,166,35,0.07);border-left:2px solid var(--amber);border-radius:0 5px 5px 0"></div>
+      </div>
+
+      <!-- 연금 세율 타임라인 배너 -->
+      <div id="pensionAgeBanner" style="font-size:11px;line-height:1.6;padding:8px 10px;background:rgba(124,109,250,0.08);border:1px solid rgba(124,109,250,0.2);border-radius:7px"></div>
+    </div>
+
+    <!-- 투자 기간 -->
+    <div class="sec">
+      <div class="sec-title">투자 기간</div>
+      <div class="field">
+        <div class="field-label">목표 나이 <span class="val" id="targetAgeL">60세</span></div>
+        <div class="input-row">
+          <input type="range" min="20" max="100" step="1" value="60" id="targetAgeS" oninput="onTargetAge(this.value)">
+          <div class="num-box">
+            <input type="number" min="20" max="100" value="60" id="targetAgeN" oninput="onTargetAgeN(this.value)">
+            <span class="unit">세</span>
+          </div>
+        </div>
+      </div>
+      <!-- 자동 계산된 투자기간 표시 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 11px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;margin-top:4px">
+        <span style="font-size:11px;color:var(--text3)" id="periodLabel">투자 기간 (목표나이 − 현재나이)</span>
+        <span style="font-size:16px;font-weight:700;color:var(--purple)" id="yL">30년</span>
+      </div>
+      <div id="periodWarn" style="display:none;font-size:10px;color:#f06060;margin-top:4px">⚠ 목표 나이가 현재 나이보다 작거나 같아요.</div>
+    </div>
+
+    <!-- 물가상승률 -->
+    <div class="sec">
+      <div class="sec-title">물가상승률 (구매력 환산)</div>
+      <div class="field">
+        <div class="field-label">연 물가상승률 <span class="val" id="infL">2.5%</span></div>
+        <div class="input-row">
+          <input type="range" min="0" max="8" step="0.1" value="2.5" id="infS" oninput="onInf(this.value)">
+          <div class="num-box">
+            <input type="number" min="0" max="8" step="0.1" value="2.5" id="infN" oninput="onInfN(this.value)">
+            <span class="unit">%</span>
+          </div>
+        </div>
+      </div>
+      <div class="tax-note" style="border-left-color:#f06060">
+        미래 금액을 오늘 돈 가치로 환산 · 한국 최근 10년 평균 약 2~2.5%
+      </div>
+    </div>
+
+    <!-- 목돈 -->
+    <div class="sec" id="lumpSec">
+      <div class="sec-title" id="lumpSecTitle">목돈 (일반계좌 · 직접매수)</div>
+      <div class="field">
+        <div class="field-label">금액 <span class="val" id="lpL">10,000만원</span></div>
+        <div class="input-row">
+          <input type="range" min="0" max="1000000" step="1000" value="10000" id="lpS" oninput="syncS('lp',this.value)">
+          <div class="num-box">
+            <input type="number" min="0" max="1000000" value="10000" id="lpN" oninput="syncN('lp',this.value)">
+            <span class="unit">만원</span>
+          </div>
+        </div>
+      </div>
+      <div class="bge-row">
+        <span class="bge" data-lp="0" onclick="setLp(0)">없음</span>
+        <span class="bge" data-lp="5000" onclick="setLp(5000)">5천만</span>
+        <span class="bge on" data-lp="10000" onclick="setLp(10000)">1억</span>
+        <span class="bge" data-lp="50000" onclick="setLp(50000)">5억</span>
+        <span class="bge" data-lp="100000" onclick="setLp(100000)">10억</span>
+        <span class="bge" data-lp="300000" onclick="setLp(300000)">30억</span>
+        <span class="bge" data-lp="1000000" onclick="setLp(1000000)">100억</span>
+      </div>
+      <div class="tax-note red">배당 15% 미국 원천징수 후 재투자 · 양도차익 연 250만 초과 22%</div>
+    </div>
+
+    <!-- 연금저축펀드 -->
+    <div class="sec" id="pensionSec">
+      <div class="sec-title" id="pensionSecTitle">연금저축펀드</div>
+      <div id="pensionDisabledMsg" class="disabled-msg" style="display:none">3배 레버리지 ETF는 국내 연금저축펀드에서 투자 불가합니다.</div>
+      <div id="pensionInputs">
+        <div class="field">
+          <div class="field-label">납입액 <span class="val" id="pnL">1,800만원/년</span></div>
+          <div class="input-row">
+            <input type="range" min="0" max="1800" step="12" value="1800" id="pnS" oninput="syncPN(this.value)">
+            <div class="num-box">
+              <input type="number" min="0" max="1800" step="12" value="1800" id="pnN" oninput="syncPNN(this.value)">
+              <span class="unit">만원/년</span>
+            </div>
+          </div>
+          <div class="lbar"><div class="lf" id="pnBar"></div></div>
+          <div class="lt">
+            <span>연 1,800만원 한도 사용률</span>
+            <span id="pnLimPct">100%</span>
+          </div>
+        </div>
+        <!-- 연/월 동시 표시 카드 (ISA와 동일 스타일) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 8px">
+          <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;border:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">연간 납입</div>
+            <div style="font-size:15px;font-weight:600;color:var(--text)" id="pnAnnualDisplay">1,800만원</div>
+          </div>
+          <div style="background:rgba(124,109,250,0.07);border-radius:6px;padding:8px 10px;border:1px solid rgba(124,109,250,0.25)">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">월 환산 (÷12)</div>
+            <div style="font-size:15px;font-weight:600;color:var(--purple)" id="pnMonthlyBox">150만원</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">
+          💡 연 1,800만원 ÷ 12 = <b style="color:var(--purple)">월 150만원</b> — 12의 배수로 설정하면 월 납입이 딱 떨어져요
+        </div>
+        <div class="warn-box" id="pnW">연 납입 한도(1,800만원)를 초과했어요.</div>
+        <div class="row-info"><span>세액공제 환급 (연 600만 한도)</span><span class="rv" id="pnR">연 99만원</span></div>
+        <div class="field" style="margin-top:10px">
+          <div class="field-label">연봉(총급여) 구간</div>
+          <div class="input-row">
+            <select id="salaryBand" onchange="onSalaryBandChange(this.value)" style="width:100%;background:#111827;color:#fff;border:1px solid #2d3648;border-radius:10px;padding:10px 12px;font-size:13px">
+              <option value="high" selected>총급여 5,500만원 초과 → 13.2%</option>
+              <option value="low">총급여 5,500만원 이하 → 16.5%</option>
+            </select>
+          </div>
+          <div style="font-size:10px;color:#7f8aa3;margin-top:6px">근로소득자 기준: 총급여 5,500만원 이하이면 16.5%, 초과이면 13.2%가 적용됩니다. 사업소득 등은 종합소득금액 4,500만원 기준을 함께 확인하세요.</div>
+        </div>
+        <div class="tax-note blue">배당 전액 재투자(과세이연) · 인출 시 3.3~5.5% (나이에 따라 다름) · 55세 이후 정상 수령</div>
+      </div>
+    </div>
+
+    <!-- ISA -->
+    <div class="sec" id="isaSec">
+      <div class="sec-title" id="isaSecTitle">ISA</div>
+      <div id="isaDisabledMsg" class="disabled-msg" style="display:none">3배 레버리지 ETF는 국내 ISA에서 투자 불가합니다.</div>
+      <div id="isaInputs">
+        <div class="field">
+          <div class="field-label">납입액 <span class="val" id="isL">2,000만원/년</span></div>
+          <div class="input-row">
+            <input type="range" min="0" max="2000" step="10" value="2000" id="isS" oninput="syncISA(this.value)">
+            <div class="num-box">
+              <input type="number" min="0" max="2000" step="10" value="2000" id="isN" oninput="syncISAN(this.value)">
+              <span class="unit">만원/년</span>
+            </div>
+          </div>
+          <div class="lbar"><div class="lf" id="isBar"></div></div>
+          <div class="lt">
+            <span>연 2,000만원 한도 사용률</span>
+            <span id="isLimPct">100%</span>
+          </div>
+        </div>
+        <!-- 연/월 동시 표시 카드 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 8px">
+          <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;border:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">연간 납입</div>
+            <div style="font-size:15px;font-weight:600;color:var(--text)" id="isAnnualDisplay">2,000만원</div>
+          </div>
+          <div style="background:rgba(45,212,160,0.07);border-radius:6px;padding:8px 10px;border:1px solid rgba(45,212,160,0.25)">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">월 환산 (÷12)</div>
+            <div style="font-size:15px;font-weight:600;color:var(--teal)" id="isMonthlyBox">166.7만원</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">
+          💡 연 2,000만원 ÷ 12 = <b style="color:var(--teal)">월 166.7만원</b> — 만원 단위로 나눠지지 않아 연간 기준으로 설정해요
+        </div>
+        <div class="warn-box" id="isW">연 납입 한도(2,000만원)를 초과했어요.</div>
+        <div class="tax-note green">배당 전액 재투자(과세이연) · 만기 수익 200만 비과세, 초과 9.9% · 만기 후 연금이전 시 전환금액의 10%(최대 300만)만큼 연금 세액공제 한도 추가</div>
+        <div class="field" style="margin-top:10px">
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);line-height:1.5;cursor:pointer">
+            <input type="checkbox" id="isaTransferToggle" checked onchange="onIsaTransferToggle(this.checked)" style="margin-top:2px">
+            <span><b>ISA 만기(3년마다) 연금이전 이벤트 반영</b><br><span style="font-size:10px;color:#7f8aa3">3년 차, 6년 차, 9년 차…마다 ISA 잔액(세금 반영 후)을 연금저축으로 이전. 이전금액의 10%(최대 300만원)에 대한 추가 세액공제 환급을 그 해 연말에만 재투자합니다.</span></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 일반계좌 월납입 -->
+    <div class="sec" id="scSec">
+      <div class="sec-title" id="scSecTitle">일반계좌 직투 (월 납입)</div>
+      <div class="field">
+        <div class="field-label">월 납입액 <span class="val" id="scL">0만원</span></div>
+        <div class="input-row">
+          <input type="range" min="0" max="2000" step="1" value="0" id="scS" oninput="syncS('sc',this.value)">
+          <div class="num-box">
+            <input type="number" min="0" max="2000" value="0" id="scN" oninput="syncN('sc',this.value)">
+            <span class="unit">만원</span>
+          </div>
+        </div>
+      </div>
+      <div class="tax-note red">배당 15% 미국 원천징수 후 재투자 · 양도차익 연 250만 초과 22%</div>
+      <div class="monthly-total">
+        <div style="font-size:11px;color:var(--text2)">월 총 납입 (목돈 제외)</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)" id="monthlyTotal">317만원</div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ── 메인 (결과) ── -->
+  <div class="main">
+
+    <!-- 요약 지표 -->
+    <div class="met-grid" id="metArea"></div>
+
+    <!-- 총 자산 박스 -->
+    <div class="tot-box" id="totBox"></div>
+
+    <!-- 명목 vs 실질 차트 -->
+    <div class="card">
+      <div class="ct">명목 자산 vs 실질 구매력 비교</div>
+      <div class="leg">
+        <span class="li"><span class="ld" style="background:#7c6dfa"></span>명목 자산 (세전)</span>
+        <span class="li"><span class="ld" style="background:#f06060"></span>실질 구매력 (오늘 돈 기준)</span>
+        <span class="li"><span class="ld" style="background:#2dd4a0"></span>실질 세후 구매력</span>
+      </div>
+      <div class="cw" style="height:200px"><canvas id="inflChart"></canvas></div>
+      <div id="inflNote" style="font-size:10px;color:#555f7a;margin-top:8px;text-align:center"></div>
+    </div>
+
+    <!-- 자산 성장 추이 -->
+    <div class="card">
+      <div class="ct" id="growthTitle">자산 성장 추이 (세전)</div>
+      <div class="leg">
+        <span class="li"><span class="ld" style="background:#7c6dfa"></span>원금</span>
+        <span class="li"><span class="ld" style="background:#2dd4a0"></span>연금·ISA 수익</span>
+        <span class="li"><span class="ld" style="background:#f5a623"></span>일반계좌 수익</span>
+      </div>
+      <div class="cw" style="height:220px"><canvas id="growthChart"></canvas></div>
+    </div>
+
+    <!-- 배당금 현황 -->
+    <div class="card">
+      <div class="ct">배당금 현황 — 명목 vs 실질 비교</div>
+      <div style="font-size:10px;color:#555f7a;margin-bottom:8px">초록 = 미래에 받는 금액 · 빨간색 = 오늘 돈으로 환산한 실제 구매력</div>
+      <div class="tab-r">
+        <button class="tb on" id="tabM" onclick="switchTab('m')">배당환산액</button>
+        <button class="tb" id="tabC" onclick="switchTab('c')">누적 배당금</button>
+      </div>
+      <div class="leg" id="divLeg"></div>
+      <div class="cw" style="height:190px"><canvas id="divChart"></canvas></div>
+    </div>
+
+    <!-- 계좌별 자산 -->
+    <div class="card">
+      <div class="ct">계좌별 자산 및 세후 예상액</div>
+      <div id="acctBreakdown"></div>
+    </div>
+
+    <!-- 연도별 상세 내역 -->
+    <div class="card">
+      <div class="ct">연도별 상세 내역
+        <span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:8px">※ 금액 = 납입금 + 투자수익 + 세액공제환급 재투자 포함 잔액</span>
+      </div>
+      <div class="sb">
+        <table class="tbl">
+          <thead><tr>
+            <th>연차</th>
+            <th>연도</th>
+            <th>나이</th>
+            <th>연금세율</th>
+            <th id="retHead" style="display:none">수익률</th>
+            <th>연금저축</th><th>ISA</th><th>목돈</th><th>월납입</th>
+            <th>총자산(세전)</th><th>실질가치</th><th>배당환산액</th><th>실질환산액</th>
+          </tr></thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 면책 고지 -->
+    <div class="notice">
+      세금 처리 기준: 연금저축은 과세이연 후 연금수령세를 보수적으로 5.5% 적용했고, ISA는 만기(3년) 시 수익 200만원까지 비과세·초과분 9.9%를 적용했습니다. ISA는 연간 기준 납입액으로 설정하며, 월 환산은 연납입 ÷ 12로 계산합니다. 일반계좌는 미국 직투 ETF에 한해 배당 15% 원천징수 후 재투자와 양도차익 22%(연 250만원 기본공제 후)를 각 연도 말 전량 매도 가정으로 단순 반영했습니다. ISA 만기(3년마다) 연금이전 옵션을 켜면 해당 해에 ISA 세금 반영 후 잔액을 연금저축으로 이전하고, 전환금액의 10%(최대 300만원)에 대한 추가 세액공제 환급을 그 해 연말에만 재투자하는 단순모델을 적용했습니다. 과거 수익률은 각 ETF 기준 근사치이며 레버리지 ETF는 변동성 감쇄를 간략 반영한 모델입니다. 과거 성과가 미래를 보장하지 않아요.
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+/**
+ * data.js — ETF 메타데이터 & 연도별 과거 수익률 데이터
+ *
+ * 새 ETF 추가 방법:
+ *  1. ETF_DATA 에 항목 추가
+ *  2. YEARLY_XXX 데이터 추가 (없으면 비슷한 지수 기반으로 생성)
+ *  3. getYearlyData() switch 에 case 추가
+ *  4. index.html <select> 에 <option> 추가
+ */
+
+'use strict';
+
+/* ── ETF 메타데이터 ─────────────────────────────────────────── */
+/*
+ * growth:       계산기 기본값 — 총 수익률(주가상승+배당재투자 포함) %
+ * dividend:     계산기 기본 배당 수익률 %
+ * scenarios:    [보수적, 중립, 낙관적] 총 수익률 %
+ * dividendAvg:  역사적 평균 배당 수익률 %
+ * dividendType: 'none'(거의없음) | 'low'(소액) | 'mid'(중간) | 'high'(고배당)
+ * dividendNote: 초보자용 배당 설명
+ * dividendRange:[최소, 최대] — 슬라이더 범위
+ * priceNote:    주가 상승 구조 설명
+ *
+ * ※ JEPI 같은 커버드콜 ETF 주의:
+ *   growth = 총 수익률(주가상승+배당 재투자시)
+ *   실제 주가 상승은 낮고 배당이 대부분 → dividendType: 'high'
+ */
+const ETF_DATA = {
+  QQQ: {
+    display: 'QQQ', listing: 'US',
+    growth: 12.0, dividend: 0.7,
+    priceGrowth: 11.3,   // 주가 상승만 (총수익률 - 배당)
+    scenarios: [7, 12, 18],
+    dividendAvg: 0.7,
+    dividendType: 'none',
+    dividendNote: '배당 거의 없음 (연 ~0.7%) — 수익의 대부분은 주가 상승에서 발생해요',
+    dividendRange: [0, 2],
+    priceNote: '주가 상승 중심 ETF',
+    group: '미국 나스닥100 1배',
+    isaProxy: 'TIGER 미국나스닥100', pensionProxy: 'TIGER 미국나스닥100',
+    proxyNote: 'QQQ 직투는 ISA/연금저축 불가 → 국내상장 미국나스닥100 ETF로 대체'
+  },
+  VOO: {
+    display: 'VOO', listing: 'US',
+    growth: 10.0, dividend: 1.4,
+    priceGrowth: 8.6,
+    scenarios: [6, 10, 14],
+    dividendAvg: 1.5,
+    dividendType: 'low',
+    dividendNote: '소액 배당 (연 ~1.5%) — S&P500 구성 기업들의 배당 합산. 수익의 대부분은 주가 상승',
+    dividendRange: [0.5, 3],
+    priceNote: '주가 상승 중심, 소액 배당 병행',
+    group: '미국 S&P500 1배',
+    isaProxy: 'ACE 미국S&P500', pensionProxy: 'ACE 미국S&P500',
+    proxyNote: 'VOO 직투는 ISA/연금저축 불가 → ACE 미국S&P500으로 대체'
+  },
+  SPY: {
+    display: 'SPY', listing: 'US',
+    growth: 10.0, dividend: 1.3,
+    priceGrowth: 8.7,
+    scenarios: [6, 10, 14],
+    dividendAvg: 1.4,
+    dividendType: 'low',
+    dividendNote: '소액 배당 (연 ~1.4%) — VOO와 동일한 S&P500 추종. 운용보수가 약간 높음',
+    dividendRange: [0.5, 3],
+    priceNote: '주가 상승 중심, 소액 배당 병행',
+    group: '미국 S&P500 1배',
+    isaProxy: 'ACE 미국S&P500', pensionProxy: 'ACE 미국S&P500',
+    proxyNote: 'SPY 직투는 ISA/연금저축 불가 → ACE 미국S&P500으로 대체'
+  },
+  SCHD: {
+    display: 'SCHD', listing: 'US',
+    growth: 9.0, dividend: 3.5,
+    priceGrowth: 5.5,
+    scenarios: [6, 9, 12],
+    dividendAvg: 3.5,
+    dividendType: 'mid',
+    dividendNote: '중간 배당 (연 ~3.5%) — 배당을 꾸준히 늘려온 우량 기업 100개. 배당+주가 상승 균형',
+    dividendRange: [2, 6],
+    priceNote: '배당 + 주가 상승 균형형',
+    group: '미국 배당성장',
+    isaProxy: 'TIGER 미국배당다우존스', pensionProxy: 'TIGER 미국배당다우존스',
+    proxyNote: 'SCHD 직투는 ISA/연금저축 불가 → TIGER 미국배당다우존스로 대체'
+  },
+  JEPI: {
+    display: 'JEPI', listing: 'US',
+    growth: 8.0, dividend: 7.0,
+    priceGrowth: 1.0,   // 주가 상승은 약 1% 수준
+    scenarios: [5, 8, 11],
+    dividendAvg: 7.5,
+    dividendType: 'high',
+    dividendNote: '고배당 (연 ~7~9%) — 커버드콜 전략으로 매월 높은 배당 지급. 주가 상승폭은 연 1~2% 수준으로 제한적. 총 수익률 중 배당 비중이 압도적으로 높음',
+    dividendRange: [4, 12],
+    priceNote: '고배당 중심 (주가 상승은 낮음)',
+    group: '미국 커버드콜 배당',
+    isaProxy: 'KODEX 미국배당프리미엄액티브',
+    pensionProxy: 'KODEX 미국배당프리미엄액티브',
+    proxyNote: 'JEPI 직투는 ISA/연금저축 불가 → KODEX 미국배당프리미엄액티브로 대체'
+  },
+  QLD: {
+    display: 'QLD', listing: 'US',
+    growth: 14.0, dividend: 0.4,
+    priceGrowth: 13.6,
+    scenarios: [5, 14, 24],
+    dividendAvg: 0.4,
+    dividendType: 'none',
+    dividendNote: '배당 거의 없음 (연 ~0.4%) — 2배 레버리지로 주가 상승을 극대화하는 구조',
+    dividendRange: [0, 2],
+    priceNote: '주가 상승 극대화 (2배)',
+    group: '미국 나스닥100 2배',
+    isaProxy: 'TIGER 미국나스닥100레버리지',
+    pensionProxy: 'TIGER 미국나스닥100레버리지',
+    proxyNote: 'QLD 직투는 ISA/연금저축 불가 → TIGER 미국나스닥100레버리지로 대체'
+  },
+  USD: {
+    display: 'USD', listing: 'US',
+    growth: 15.0, dividend: 0.2,
+    priceGrowth: 14.8,
+    scenarios: [5, 15, 28],
+    dividendAvg: 0.2,
+    dividendType: 'none',
+    dividendNote: '배당 거의 없음 (연 ~0.2%) — 반도체 2배 레버리지, 주가 상승이 유일한 수익 원천',
+    dividendRange: [0, 2],
+    priceNote: '주가 상승 극대화 (2배, 반도체)',
+    group: '미국 반도체 2배',
+    isaProxy: 'TIGER 미국필라델피아반도체레버리지',
+    pensionProxy: 'TIGER 미국필라델피아반도체레버리지',
+    proxyNote: 'USD 직투는 ISA/연금저축 불가 → TIGER 미국필라델피아반도체레버리지로 대체'
+  },
+  SOXX: {
+    display: 'SOXX', listing: 'US',
+    growth: 13.0, dividend: 0.8,
+    priceGrowth: 12.2,
+    scenarios: [6, 13, 22],
+    dividendAvg: 0.9,
+    dividendType: 'low',
+    dividendNote: '소액 배당 (연 ~0.9%) — 반도체 기업 40개 구성. 수익의 대부분은 반도체 주가 상승',
+    dividendRange: [0, 3],
+    priceNote: '주가 상승 중심 (반도체)',
+    group: '미국 반도체 1배',
+    isaProxy: 'TIGER 미국필라델피아반도체나스닥',
+    pensionProxy: 'TIGER 미국필라델피아반도체나스닥',
+    proxyNote: 'SOXX 직투는 ISA/연금저축 불가 → 국내상장 미국 반도체 ETF로 대체'
+  },
+  TQQQ: {
+    display: 'TQQQ', listing: 'US',
+    growth: 16.0, dividend: 0.3,
+    priceGrowth: 15.7,
+    scenarios: [0, 16, 35],
+    dividendAvg: 0.3,
+    dividendType: 'none',
+    dividendNote: '배당 매우 소액 (연 ~0.3%) — 3배 레버리지, 수익 전부 주가 등락에서 발생. 하락 시 손실도 3배이며 변동성 감쇄(Volatility Decay)로 장기 보유 시 기대 수익이 크게 낮아질 수 있음',
+    dividendRange: [0, 1],
+    priceNote: '3배 레버리지 — 매우 고위험',
+    group: '미국 나스닥100 3배 ⚠️',
+    noProxy: true, isaProxy: null, pensionProxy: null,
+    proxyNote: '3배 레버리지 ETF는 국내 ISA/연금저축 투자 불가 — 일반계좌만 사용'
+  },
+  SOXL: {
+    display: 'SOXL', listing: 'US',
+    growth: 18.0, dividend: 0.3,
+    priceGrowth: 17.7,
+    scenarios: [0, 18, 40],
+    dividendAvg: 0.3,
+    dividendType: 'none',
+    dividendNote: '배당 매우 소액 (연 ~0.3%) — 반도체 3배 레버리지. 반도체 특성상 변동성이 나스닥보다 훨씬 크며, 장기 보유 시 변동성 감쇄 위험 더 높음',
+    dividendRange: [0, 1],
+    priceNote: '3배 레버리지 — 초고위험 (반도체)',
+    group: '미국 반도체 3배 ⚠️',
+    noProxy: true, isaProxy: null, pensionProxy: null,
+    proxyNote: '3배 레버리지 ETF는 국내 ISA/연금저축 투자 불가 — 일반계좌만 사용'
+  }
+};
+
+/* ── 경제위기 구간 ─────────────────────────────────────────────
+ * ✅ "최악의 타이밍" 기준: 고점 직전 or 폭락 시작 연도에 투자 시작
+ * 다중 선택 시 해당 위기 연도만 추출해 비연속 시뮬레이션
+ * ─────────────────────────────────────────────────────────── */
+const CRISES = [
+  {
+    key:'gulf', name:'걸프전 고점진입',
+    period:'1990~91', s:1990, e:1991, color:'#E24B4A',
+    desc:'S&P -3%→+30%  |  1990년 고점 투자 시작',
+    note:'1990년 8월 이라크 침공. 연간 기준 S&P -3% 후 1991년 +30% 빠른 회복.'
+  },
+  {
+    key:'dotcom_peak', name:'닷컴버블 고점진입',
+    period:'1999~02', s:1999, e:2002, color:'#ff6b35',
+    desc:'QQQ +102%→-75%  |  버블 정점에서 투자',
+    note:'1999년 QQQ +102% 버블 최정점 투자 시작. 이후 3년 연속 폭락, 누적 -75%.'
+  },
+  {
+    key:'dotcom', name:'닷컴버블 붕괴만',
+    period:'2000~02', s:2000, e:2002, color:'#E24B4A',
+    desc:'QQQ 3년 누적 -75%  |  붕괴 직후 투자',
+    note:'2000년 초 투자. 나스닥100 3년 누적 -75%, S&P -38%.'
+  },
+  {
+    key:'gfc', name:'금융위기 고점진입',
+    period:'2007~09', s:2007, e:2009, color:'#A32D2D',
+    desc:'S&P -37%  |  리먼 파산 전 최고점 투자',
+    note:'2007년 10월 역대 최고점 투자. 2008년 리먼 파산, S&P -37%. 2009년 +26% 반등 포함.'
+  },
+  {
+    key:'euro', name:'유럽 재정위기',
+    period:'2010~12', s:2010, e:2012, color:'#BA7517',
+    desc:'변동성 확대  |  미국 시장은 상대적 선방',
+    note:'그리스·스페인 위기. 미국 S&P는 2010~2012 연평균 +11%로 선방. 변동성은 증가.'
+  },
+  {
+    key:'china', name:'중국 쇼크',
+    period:'2015~16', s:2015, e:2016, color:'#854F0B',
+    desc:'S&P -1%→+12%  |  위안화 쇼크 투자',
+    note:'위안화 평가절하+원자재 급락. S&P 2015년 -1%, 2016년 +12% 회복.'
+  },
+  {
+    key:'trade', name:'미중 무역전쟁',
+    period:'2018~19', s:2018, e:2019, color:'#993C1D',
+    desc:'S&P -4%→+31%  |  관세전쟁 고점 투자',
+    note:'2018년 관세전쟁: S&P -4.4%, 반도체 -10%. 2019년 1단계 합의로 QQQ +39% 급반등.'
+  },
+  {
+    key:'covid', name:'COVID 고점진입',
+    period:'2019~21', s:2019, e:2021, color:'#E24B4A',
+    desc:'2020년 -34% 폭락 포함  |  연간 기준 한계 있음',
+    note:'⚠ 연간 데이터 한계: 2020년 2~3월 -34% 폭락은 연간 +49%에 묻힘. 2019년 고점~2021년 3년으로 대체 시뮬레이션.'
+  },
+  {
+    key:'rate', name:'연준 금리인상 고점진입',
+    period:'2021~23', s:2021, e:2023, color:'#7b5ea7',
+    desc:'QQQ -33%→+55%  |  2021년 최고점 투자',
+    note:'2021년 QQQ +27% 역대 최고점 투자. 2022년 금리인상으로 QQQ -33%. 2023년 +55% 반등.'
+  },
+];
+
+const MIN_Y = 1990;
+const MAX_Y = 2024;
+
+/* ── 과거 연도별 수익률 데이터 ──────────────────────────────── */
+
+// SCHD / 미국 배당성장
+const YEARLY_SCHD = {
+  1990:{r:-3,d:3.8},  1991:{r:28,d:3.5},  1992:{r:8,d:3.4},   1993:{r:10,d:3.3},  1994:{r:0,d:3.4},
+  1995:{r:35,d:3.0},  1996:{r:22,d:2.9},  1997:{r:28,d:2.7},  1998:{r:15,d:2.6},  1999:{r:5,d:2.8},
+  2000:{r:-3,d:3.0},  2001:{r:-8,d:3.2},  2002:{r:-15,d:3.5}, 2003:{r:28,d:3.0},  2004:{r:14,d:2.8},
+  2005:{r:8,d:2.8},   2006:{r:18,d:2.7},  2007:{r:6,d:2.6},   2008:{r:-32,d:4.2}, 2009:{r:22,d:3.8},
+  2010:{r:17,d:3.2},  2011:{r:5,d:3.0},   2012:{r:12,d:2.8},  2013:{r:33,d:2.5},  2014:{r:13,d:2.8},
+  2015:{r:-1,d:3.2},  2016:{r:18,d:3.0},  2017:{r:22,d:2.8},  2018:{r:-7,d:3.5},  2019:{r:29,d:3.2},
+  2020:{r:15,d:3.5},  2021:{r:29,d:3.2},  2022:{r:-3,d:3.8},  2023:{r:4,d:3.5},   2024:{r:22,d:3.5},
+};
+
+// QQQ / 나스닥100
+const YEARLY_QQQ = {
+  1990:{r:-8,d:0.5},  1991:{r:62,d:0.5},  1992:{r:15,d:0.5},  1993:{r:12,d:0.5},  1994:{r:-3,d:0.5},
+  1995:{r:43,d:0.6},  1996:{r:23,d:0.6},  1997:{r:21,d:0.6},  1998:{r:85,d:0.5},  1999:{r:102,d:0.4},
+  2000:{r:-37,d:0.5}, 2001:{r:-33,d:0.5}, 2002:{r:-38,d:0.5}, 2003:{r:50,d:0.5},  2004:{r:10,d:0.6},
+  2005:{r:2,d:0.6},   2006:{r:7,d:0.6},   2007:{r:19,d:0.7},  2008:{r:-42,d:0.8}, 2009:{r:55,d:0.7},
+  2010:{r:20,d:0.7},  2011:{r:3,d:0.7},   2012:{r:18,d:0.7},  2013:{r:37,d:0.7},  2014:{r:19,d:0.7},
+  2015:{r:9,d:0.7},   2016:{r:7,d:0.7},   2017:{r:33,d:0.8},  2018:{r:-1,d:0.8},  2019:{r:39,d:0.8},
+  2020:{r:49,d:0.7},  2021:{r:27,d:0.6},  2022:{r:-33,d:0.8}, 2023:{r:55,d:0.7},  2024:{r:25,d:0.6},
+};
+
+// VOO / SPY — S&P500
+const YEARLY_VOO = {
+  1990:{r:-3,d:3.3},  1991:{r:30,d:3.0},  1992:{r:8,d:2.8},   1993:{r:10,d:2.7},  1994:{r:1,d:2.8},
+  1995:{r:38,d:2.5},  1996:{r:23,d:2.2},  1997:{r:33,d:1.9},  1998:{r:29,d:1.5},  1999:{r:21,d:1.2},
+  2000:{r:-9,d:1.4},  2001:{r:-12,d:1.6}, 2002:{r:-22,d:1.8}, 2003:{r:29,d:1.6},  2004:{r:11,d:1.7},
+  2005:{r:5,d:1.8},   2006:{r:16,d:1.8},  2007:{r:5,d:1.9},   2008:{r:-37,d:3.1}, 2009:{r:26,d:2.4},
+  2010:{r:15,d:2.0},  2011:{r:2,d:2.1},   2012:{r:16,d:2.2},  2013:{r:32,d:1.9},  2014:{r:14,d:1.9},
+  2015:{r:1,d:2.1},   2016:{r:12,d:2.1},  2017:{r:22,d:2.0},  2018:{r:-4,d:2.2},  2019:{r:31,d:1.9},
+  2020:{r:18,d:1.6},  2021:{r:29,d:1.3},  2022:{r:-18,d:1.7}, 2023:{r:26,d:1.5},  2024:{r:25,d:1.3},
+};
+
+// SOXX — 필라델피아 반도체 (SOX 지수 실제 연간 수익률 기반 보정)
+const YEARLY_SOXX = {
+  1990:{r:-15,d:0.8}, 1991:{r:48,d:0.8},  1992:{r:16,d:0.8},  1993:{r:22,d:0.8},  1994:{r:-5,d:0.8},
+  1995:{r:60,d:0.9},  1996:{r:30,d:0.9},  1997:{r:15,d:0.9},  1998:{r:-20,d:0.9}, 1999:{r:125,d:0.7},
+  2000:{r:-47,d:0.8}, 2001:{r:-29,d:0.9}, 2002:{r:-43,d:0.9}, 2003:{r:80,d:0.8},  2004:{r:28,d:0.8},
+  2005:{r:-1,d:0.8},  2006:{r:20,d:0.9},  2007:{r:4,d:0.9},   2008:{r:-47,d:1.2}, 2009:{r:60,d:0.9},
+  2010:{r:25,d:0.9},  2011:{r:-5,d:0.9},  2012:{r:22,d:0.9},  2013:{r:38,d:0.9},  2014:{r:32,d:0.9},
+  2015:{r:-2,d:0.9},  2016:{r:38,d:0.9},  2017:{r:38,d:0.9},  2018:{r:-10,d:1.0}, 2019:{r:70,d:0.9},
+  2020:{r:53,d:0.8},  2021:{r:43,d:0.7},  2022:{r:-35,d:1.0}, 2023:{r:65,d:0.8},  2024:{r:19,d:0.8},
+};
+
+// JEPI — 커버드콜 배당 (2020년 이전은 유사 전략 추정)
+const YEARLY_JEPI = {
+  1990:{r:4,d:6.5},  1991:{r:14,d:6.5}, 1992:{r:5,d:6.5},  1993:{r:6,d:6.5},  1994:{r:0,d:6.5},
+  1995:{r:15,d:7.0}, 1996:{r:11,d:7.0}, 1997:{r:14,d:6.8}, 1998:{r:10,d:6.5}, 1999:{r:6,d:6.5},
+  2000:{r:-4,d:7.5}, 2001:{r:-6,d:7.8}, 2002:{r:-10,d:8.0},2003:{r:14,d:7.5}, 2004:{r:8,d:7.2},
+  2005:{r:5,d:7.0},  2006:{r:10,d:7.0}, 2007:{r:4,d:7.0},  2008:{r:-18,d:8.5},2009:{r:15,d:7.5},
+  2010:{r:10,d:7.0}, 2011:{r:2,d:7.2},  2012:{r:10,d:7.0}, 2013:{r:18,d:6.8}, 2014:{r:9,d:6.8},
+  2015:{r:1,d:7.0},  2016:{r:9,d:7.0},  2017:{r:14,d:6.8}, 2018:{r:-3,d:7.5}, 2019:{r:18,d:7.0},
+  2020:{r:10,d:7.5}, 2021:{r:22,d:7.8}, 2022:{r:-3,d:9.5}, 2023:{r:5,d:9.0},  2024:{r:8,d:8.5},
+};
+
+// QLD — 나스닥100 2배 레버리지 (변동성 감쇄 반영)
+const YEARLY_QLD = (function() {
+  const out = {};
+  Object.keys(YEARLY_QQQ).forEach(yr => {
+    const { r, d } = YEARLY_QQQ[yr];
+    const lev = r >= 0 ? Math.round(r * 1.8) : Math.round(r * 2.0);
+    out[yr] = { r: Math.max(-95, lev), d: Math.round(d * 0.5 * 10) / 10 };
+  });
+  return out;
+})();
+
+// USD — 반도체 2배 레버리지 (변동성 감쇄 반영)
+const YEARLY_USD = (function() {
+  const out = {};
+  Object.keys(YEARLY_SOXX).forEach(yr => {
+    const { r, d } = YEARLY_SOXX[yr];
+    const lev = r >= 0 ? Math.round(r * 1.75) : Math.round(r * 2.0);
+    out[yr] = { r: Math.max(-95, lev), d: Math.round(d * 0.3 * 10) / 10 };
+  });
+  return out;
+})();
+
+// TQQQ — 나스닥100 3배 레버리지 (변동성 감쇄 강하게 반영)
+const YEARLY_TQQQ = (function() {
+  const out = {};
+  Object.keys(YEARLY_QQQ).forEach(yr => {
+    const { r, d } = YEARLY_QQQ[yr];
+    const lev = r >= 0 ? Math.round(r * 2.5) : Math.round(r * 3.0);
+    out[yr] = { r: Math.max(-98, lev), d: Math.round(d * 0.3 * 10) / 10 };
+  });
+  return out;
+})();
+
+// SOXL — 반도체 3배 레버리지 (변동성 감쇄 강하게 반영)
+const YEARLY_SOXL = (function() {
+  const out = {};
+  Object.keys(YEARLY_SOXX).forEach(yr => {
+    const { r, d } = YEARLY_SOXX[yr];
+    const lev = r >= 0 ? Math.round(r * 2.5) : Math.round(r * 3.0);
+    out[yr] = { r: Math.max(-98, lev), d: Math.round(d * 0.3 * 10) / 10 };
+  });
+  return out;
+})();
+
+/**
+ * 현재 선택된 ETF의 연도별 데이터 반환
+ * 새 ETF 추가 시 여기에 case 추가
+ */
+function getYearlyData() {
+  switch (CURRENT_ETF) {
+    case 'QQQ':  return YEARLY_QQQ;
+    case 'QLD':  return YEARLY_QLD;
+    case 'TQQQ': return YEARLY_TQQQ;
+    case 'VOO':
+    case 'SPY':  return YEARLY_VOO;
+    case 'SOXX': return YEARLY_SOXX;
+    case 'USD':  return YEARLY_USD;
+    case 'SOXL': return YEARLY_SOXL;
+    case 'JEPI': return YEARLY_JEPI;
+    default:     return YEARLY_SCHD;
+  }
+}
+
+/** 현재 ETF 메타데이터 반환 */
+function getCurrentETF() {
+  return ETF_DATA[CURRENT_ETF] || ETF_DATA.SCHD;
+}
+
+
+/**
+ * calculator.js — 투자 수익 계산 로직
+ *
+ * 이 파일은 순수 계산만 담당합니다.
+ * DOM 접근이나 차트 코드는 ui.js / charts.js 에 있어요.
+ */
+
+
+
+/* ── 앱 상태 (전역 변수) ─────────────────────────────────────── */
+let PRICE_R = 5.5;  // 주가 상승률 (%)  ← 신규
+let D    = 3.5;     // 배당 수익률 (%)
+let R    = 9.0;     // 총 수익률 = PRICE_R + D (자동계산, 읽기전용)
+let YR   = 30;      // 투자 기간 (년) — 초기값: TARGET_AGE(60) - USER_AGE(30)
+let LP   = 10000;   // 목돈 (만원)
+let PN_ANNUAL = 1800; // 연금저축 연간 납입 (만원) — 연 1,800만원 한도
+let PN   = 150;       // 연금저축 월 납입 = PN_ANNUAL / 12
+let IS_ANNUAL = 2000; // ISA 연간 납입 (만원) — 연 2,000만원 한도
+// IS는 월 환산값 (내부 계산용, IS_ANNUAL / 12)
+let IS   = Math.round(IS_ANNUAL / 12 * 10) / 10; // ≈ 166.7만원
+let SC   = 0;       // 일반계좌 월 납입 (만원)
+let INF  = 2.5;     // 물가상승률 (%)
+let TAB  = 'm';     // 배당 차트 탭 ('m' | 'c')
+let HMODE = false;  // 과거 데이터 모드
+let HS   = 1995;    // 과거 데이터 시작 연도
+let HE   = 2005;    // 과거 데이터 종료 연도
+let CURRENT_ETF = 'QQQ'; // 선택된 ETF 키
+let SAVED_PN = PN_ANNUAL; // 투자 불가 ETF 전환 전 연금저축 연간 납입 백업
+let SAVED_IS = IS_ANNUAL; // 투자 불가 ETF 전환 전 ISA 연간 납입 백업
+let SALARY_BAND = 'high'; // low=총급여 5,500만원 이하, high=초과
+let TAX_CREDIT_RATE = 13.2; // 연금 세액공제율(%)
+let ISA_TRANSFER_ENABLED = true; // ISA 만기(3년마다) 연금이전 이벤트 반영 여부
+const ISA_TRANSFER_INTERVAL = 3; // ISA 만기 주기(년)
+let USER_AGE    = 30;   // 현재 나이 (수동 모드)
+let TARGET_AGE  = 60;   // 목표(은퇴) 나이
+let START_YEAR  = new Date().getFullYear(); // 투자 시작 연도
+let CRISIS_AGE  = null; // 위기 시나리오 모드에서 당시 나이 (null = 미입력)
+
+/* ── 연금 세율 계산 ─────────────────────────────────────────── */
+/**
+ * 나이에 따른 연금저축 인출 세율 반환
+ * - 55세 미만: 기타소득세 16.5% (조기인출 패널티)
+ * - 55~69세: 연금소득세 5.5%
+ * - 70~79세: 연금소득세 4.4%
+ * - 80세 이상: 연금소득세 3.3%
+ */
+function getPensionTaxRate(ageAtWithdrawal) {
+  if (ageAtWithdrawal < 55) return 0.165;
+  if (ageAtWithdrawal < 70) return 0.055;
+  if (ageAtWithdrawal < 80) return 0.044;
+  return 0.033;
+}
+
+/** 투자 연차(y)에 해당하는 나이 */
+function ageAtYear(y) {
+  // 위기 시나리오 모드이고 당시 나이가 입력됐으면 CRISIS_AGE 사용
+  const baseAge = (HMODE && SELECTED_CRISIS !== null && CRISIS_AGE !== null)
+    ? CRISIS_AGE : USER_AGE;
+  return baseAge + y;
+}
+
+/** 연금 세율 레이블 (표시용) */
+function pensionTaxLabel(age) {
+  if (age < 55) return `조기인출 16.5% (${age}세, 55세 미만)`;
+  if (age < 70) return `5.5% (${age}세)`;
+  if (age < 80) return `4.4% (${age}세)`;
+  return `3.3% (${age}세)`;
+}
+
+/** 투자 기간을 목표나이 - 현재나이로 자동 계산하고 UI 동기화 */
+/**
+ * 투자 기간을 TARGET_AGE - USER_AGE로 계산, YR 업데이트
+ * @param {boolean} skipNumInput - 숫자 입력중일 때 true → input.value 덮어쓰기 방지
+ */
+function updateInvestmentPeriod(skipNumInput = false) {
+  // 위기 모드에서 당시 나이가 입력됐으면 그것을 기준으로, 아니면 현재 나이
+  const baseAge = (HMODE && SELECTED_CRISIS !== null && CRISIS_AGE !== null)
+    ? CRISIS_AGE : USER_AGE;
+
+  if (TARGET_AGE <= baseAge) TARGET_AGE = baseAge + 1;
+
+  const period = TARGET_AGE - baseAge;
+  YR = period;
+
+  const yLEl = document.getElementById('yL');
+  if (yLEl) yLEl.textContent = period + '년';
+
+  // 슬라이더 min/value 업데이트
+  const slider = document.getElementById('targetAgeS');
+  if (slider) { slider.min = baseAge + 1; slider.value = TARGET_AGE; }
+
+  // 숫자 입력 중일 때는 value 덮어쓰기 안 함 (커서 밀림 방지)
+  if (!skipNumInput) {
+    const numInput = document.getElementById('targetAgeN');
+    if (numInput) { numInput.min = baseAge + 1; numInput.value = TARGET_AGE; }
+  } else {
+    const numInput = document.getElementById('targetAgeN');
+    if (numInput) numInput.min = baseAge + 1;
+  }
+
+  const warn = document.getElementById('periodWarn');
+  if (warn) warn.style.display = 'none';
+}
+
+/** 목표 나이 슬라이더 */
+function onTargetAge(v) {
+  TARGET_AGE = parseInt(v);
+  document.getElementById('targetAgeL').textContent = TARGET_AGE + '세';
+  document.getElementById('targetAgeN').value = TARGET_AGE;
+  updateInvestmentPeriod();
+  updatePensionBanner();
+  // 위기 모드면 맥락 문구도 갱신
+  if (HMODE && SELECTED_CRISIS) {
+    const crisis = CRISES.find(c => c.key === SELECTED_CRISIS);
+    if (crisis) updateCrisisContext(crisis);
+  }
+  render();
+}
+/** 목표 나이 숫자 입력 */
+function onTargetAgeN(v) {
+  const parsed = parseInt(v);
+  if (isNaN(parsed) || v === '') return;
+  const baseAge = (HMODE && SELECTED_CRISIS && CRISIS_AGE !== null) ? CRISIS_AGE : USER_AGE;
+  TARGET_AGE = Math.max(baseAge + 1, Math.min(100, parsed));
+  document.getElementById('targetAgeL').textContent = TARGET_AGE + '세';
+  document.getElementById('targetAgeS').value = TARGET_AGE;
+  updateInvestmentPeriod(true);
+  updatePensionBanner();
+  if (HMODE && SELECTED_CRISIS) {
+    const crisis = CRISES.find(c => c.key === SELECTED_CRISIS);
+    if (crisis) updateCrisisContext(crisis);
+  }
+  render();
+}
+
+/** 연금 55세 도달 연차 계산 */
+function yearUntil55() {
+  return Math.max(0, 55 - USER_AGE);
+}
+
+/* ── 세금 계산 헬퍼 ─────────────────────────────────────────── */
+
+/**
+ * 채널별 실효 수익률 반환
+ * - pension / isa : 과세이연 → 총 수익률(PRICE_R + D) 그대로
+ * - taxable 미국  : PRICE_R + D×(1-0.15)  ← 배당에만 원천징수 15%
+ * - taxable 국내  : PRICE_R + D×(1-0.154) ← 배당소득세 15.4%
+ *
+ * @param {string} channel 'pension' | 'isa' | 'taxable'
+ */
+function taxEffRate(channel = 'taxable') {
+  if (channel === 'pension' || channel === 'isa') {
+    return PRICE_R + D; // 과세이연 — 총 수익률 그대로 복리
+  }
+  const etf = getCurrentETF();
+  if (etf.listing === 'US') {
+    return PRICE_R + D * (1 - 0.15);  // 미국 배당 원천징수 15%
+  }
+  return PRICE_R + D * (1 - 0.154);   // 국내 배당소득세 15.4%
+}
+
+/**
+ * 일반계좌 양도차익 세금 적용 (연 250만원 공제 후 22%)
+ */
+function applyTaxableExitTax(balance, principal) {
+  const etf = getCurrentETF();
+  const gain = Math.max(0, balance - principal);
+  if (etf.listing === 'US') {
+    return balance - Math.max(0, gain - 250) * 0.22;
+  }
+  return balance;
+}
+
+function applyIsaMaturityTax(balance, principal) {
+  const gain = Math.max(0, balance - principal);
+  return balance - Math.max(0, gain - 200) * 0.099;
+}
+
+function shouldIsaTransfer(yearIndex) {
+  return ISA_TRANSFER_ENABLED && ISA_TRANSFER_INTERVAL > 0 && yearIndex % ISA_TRANSFER_INTERVAL === 0;
+}
+
+/**
+ * 계좌별 표시 메타데이터 반환
+ */
+function getAccountMeta() {
+  const etf = getCurrentETF();
+  const sameProxy = etf.isaProxy === etf.display && etf.pensionProxy === etf.display;
+
+  if (etf.noProxy) {
+    return {
+      pensionName: '연금저축펀드 (투자 불가)',
+      isaName:     'ISA (투자 불가)',
+      pensionNote: '3배 레버리지 — 국내 절세계좌 투자 불가',
+      isaNote:     '3배 레버리지 — 국내 절세계좌 투자 불가',
+      lumpName:    `목돈 ${etf.display} (일반계좌 직투)`,
+      monthlyName: `월납입 ${etf.display} (일반계좌 직투)`,
+      taxableNote: '배당 15% 원천징수 후 재투자 · 양도차익 22%(연 250만 공제) 단순 반영'
+    };
+  }
+  if (etf.listing === 'US') {
+    return {
+      pensionName: `연금저축펀드 (${etf.pensionProxy})`,
+      isaName:     `ISA (${etf.isaProxy})`,
+      pensionNote: `${etf.display} 직투 불가 → ${etf.pensionProxy} 대체`,
+      isaNote:     `${etf.display} 직투 불가 → ${etf.isaProxy} 대체`,
+      lumpName:    `목돈 ${etf.display} (일반계좌 직투)`,
+      monthlyName: `월납입 ${etf.display} (일반계좌 직투)`,
+      taxableNote: '배당 15% + 양도차익 22%(연 250만 공제) 단순 반영'
+    };
+  }
+  return {
+    pensionName: `연금저축펀드 (${etf.pensionProxy})`,
+    isaName:     `ISA (${etf.isaProxy})`,
+    pensionNote: sameProxy ? '동일 ETF 적용 · 연금수령세 5.5%' : `${etf.pensionProxy} 적용 · 5.5%`,
+    isaNote:     sameProxy ? '동일 ETF 적용 · 수익 200만 초과 9.9%' : `${etf.isaProxy} 적용 · 9.9%`,
+    lumpName:    `목돈 ${etf.display} (일반계좌)`,
+    monthlyName: `월납입 ${etf.display} (일반계좌)`,
+    taxableNote: '배당성 수익 15.4% 단순 반영'
+  };
+}
+
+/* ── 과거 데이터 준비 ───────────────────────────────────────── */
+
+/**
+ * 선택된 연도 범위의 데이터 반환 (부족한 기간은 평균으로 연장)
+ */
+
+let HIST_MODE = 'crisis'; // 'crisis' | 'custom'
+
+function setCrisisMode(mode) {
+  HIST_MODE = mode;
+  const crisisPanel = document.getElementById('crisisModePanel');
+  const customPanel = document.getElementById('customModePanel');
+  const crisisTab   = document.getElementById('crisisModeTab');
+  const customTab   = document.getElementById('customModeTab');
+
+  if (mode === 'crisis') {
+    if (crisisPanel) crisisPanel.style.display = '';
+    if (customPanel) customPanel.style.display = 'none';
+    if (crisisTab)  { crisisTab.style.background = 'rgba(124,109,250,0.15)'; crisisTab.style.color = 'var(--purple)'; crisisTab.style.borderColor = 'rgba(124,109,250,0.4)'; crisisTab.style.fontWeight = '600'; }
+    if (customTab)  { customTab.style.background = 'transparent'; customTab.style.color = 'var(--text2)'; customTab.style.borderColor = 'var(--border)'; customTab.style.fontWeight = '400'; }
+  } else {
+    if (crisisPanel) crisisPanel.style.display = 'none';
+    if (customPanel) customPanel.style.display = '';
+    if (customTab)  { customTab.style.background = 'rgba(245,166,35,0.12)'; customTab.style.color = 'var(--amber)'; customTab.style.borderColor = 'rgba(245,166,35,0.35)'; customTab.style.fontWeight = '600'; }
+    if (crisisTab)  { crisisTab.style.background = 'transparent'; crisisTab.style.color = 'var(--text2)'; crisisTab.style.borderColor = 'var(--border)'; crisisTab.style.fontWeight = '400'; }
+    // 커스텀 모드 전환 시 위기 선택 해제
+    SELECTED_CRISIS = null;
+    applySelectedCrises();
+  }
+  render();
+}
+
+/**
+ * getHistData() — 역사 데이터 준비
+ *
+ * [위기 선택 모드] SELECTED_CRISES가 있으면:
+ *   - 위기 시작 연도(HS)부터 2024년까지 실제 역사 데이터 사용
+ *   - "최악의 타이밍(위기 직전)에 투자 시작 → 목표나이까지 어떻게 됐나?"
+ *   - 역사 데이터 소진 후에는 해당 ETF 역사 평균으로 연장
+ *
+ * [슬라이더 범위 모드] SELECTED_CRISES 없으면:
+ *   - HS~HE 범위 사용, 부족 시 평균 연장 (기존 방식)
+ */
+function getHistData() {
+  const YEARLY = getYearlyData();
+  let raw = [];
+
+  if (HMODE && SELECTED_CRISIS !== null) {
+    // 선택된 위기 객체 찾기
+    const crisis = CRISES.find(c => c.key === SELECTED_CRISIS);
+    const startYr = crisis ? crisis.s : HS;
+
+    // startYr부터 (startYr + YR - 1)까지만 실데이터 사용
+    // → 투자 기간(YR)을 초과하지 않도록 제한
+    // 예) 1999년 시작, 23년 투자 → 1999~2021년만 실데이터
+    const endYr = Math.min(startYr + YR - 1, MAX_Y);
+    for (let y = startYr; y <= endYr; y++) {
+      const d = YEARLY[y];
+      if (d) raw.push({ yr: y, r: d.r, d: d.d, ext: false, isCrisis: crisis && y >= crisis.s && y <= crisis.e });
+    }
+
+    // 위기 시작 이후 구간 표시용 HS 업데이트
+    HS = startYr;
+
+  } else {
+    // 슬라이더 범위 모드
+    for (let y = HS; y <= HE; y++) {
+      const d = YEARLY[y];
+      if (d) raw.push({ yr: y, r: d.r, d: d.d, ext: false });
+    }
+  }
+
+  if (!raw.length) return [];
+
+  // 역사 평균 계산 (전체 ETF 데이터 기준)
+  const allData = Object.values(YEARLY);
+  const avgR = allData.reduce((s, x) => s + x.r, 0) / allData.length;
+  const avgD = allData.reduce((s, x) => s + x.d, 0) / allData.length;
+
+  const out = [...raw];
+  const lastYr = raw[raw.length - 1].yr;
+  let yr = lastYr + 1;
+  while (out.length < YR) {
+    out.push({ yr: yr++, r: Math.round(avgR * 10) / 10, d: Math.round(avgD * 10) / 10, ext: true });
+  }
+  return out;
+}
+
+/* ── 핵심 계산 함수 ─────────────────────────────────────────── */
+
+/**
+ * 수동 모드 계산 (고정 수익률)
+ * @returns { rows, pnRef, totalRef }
+ */
+function calcManual() {
+  const etf = getCurrentETF();
+  const effPN = etf.noProxy ? 0 : PN;
+  const effIS = etf.noProxy ? 0 : IS;
+  const pnA   = etf.noProxy ? 0 : PN_ANNUAL;  // 연간 납입액 (정수, 오차 없음)
+  const isA   = etf.noProxy ? 0 : IS_ANNUAL;  // 연간 납입액 (정수, 오차 없음)
+  const scA   = SC * 12;
+  const annualBasePnRef = etf.noProxy ? 0 : Math.min(pnA, 600) * (TAX_CREDIT_RATE / 100);
+
+  const monthlyPension = taxEffRate('pension') / 100 / 12;
+  const monthlyISA = taxEffRate('isa') / 100 / 12;
+  const monthlyTaxable = taxEffRate('taxable') / 100 / 12;
+  const annualTaxable = taxEffRate('taxable') / 100;
+  const d = D / 100;
+  const rows = [];
+  let pnB = 0, isB = 0, lpB = LP, scB = 0;
+  let isaPrincipalCycle = 0;
+  let totalRef = 0;
+
+  for (let y = 1; y <= YR; y++) {
+    for (let m = 0; m < 12; m++) {
+      pnB = (pnB + effPN) * (1 + monthlyPension);
+      isB = (isB + effIS) * (1 + monthlyISA);
+      scB = (scB + SC) * (1 + monthlyTaxable);
+      isaPrincipalCycle += effIS;
+    }
+    lpB = lpB * (1 + annualTaxable);
+
+    if (!etf.noProxy && annualBasePnRef > 0) {
+      pnB += annualBasePnRef; // 연말 기본 환급금 재투자 가정
+      totalRef += annualBasePnRef;
+    }
+
+    let isaTransferAmount = 0;
+    let isaExtraRefund = 0;
+    if (!etf.noProxy && shouldIsaTransfer(y) && isB > 0) {
+      const isaAfterTaxMaturity = applyIsaMaturityTax(isB, isaPrincipalCycle);
+      isaTransferAmount = isaAfterTaxMaturity;
+      const baseDeductible = Math.min(pnA, 600);
+      const extraLimit = Math.min(isaTransferAmount * 0.1, 300);
+      const deductibleCapWithTransfer = 600 + extraLimit;
+      const deductibleWithTransfer = Math.min(pnA + isaTransferAmount, deductibleCapWithTransfer);
+      const additionalDeductible = Math.max(0, deductibleWithTransfer - baseDeductible);
+      isaExtraRefund = additionalDeductible * (TAX_CREDIT_RATE / 100);
+      pnB += isaTransferAmount + isaExtraRefund;
+      totalRef += isaExtraRefund;
+      isB = 0;
+      isaPrincipalCycle = 0;
+    }
+
+    const fpn = pnB;
+    const fis = isB;
+    const flp = lpB;
+    const fsc = scB;
+    const tot = fpn + fis + flp + fsc;
+    const prin = pnA * y + isA * y + scA * y + LP;
+    const pensionProfitOnly = fpn - pnA * y;
+    const isaProfitRaw = fis - isaPrincipalCycle;
+    const taxableProfit = flp + fsc - LP - scA * y;
+
+    const age = ageAtYear(y);
+    const pensionTaxRate = getPensionTaxRate(age);
+    const fpnAT = fpn * (1 - pensionTaxRate);
+    const fisAT = shouldIsaTransfer(y) && !etf.noProxy ? 0 : applyIsaMaturityTax(fis, isaPrincipalCycle);
+    const flpAT = applyTaxableExitTax(flp, LP);
+    const fscAT = applyTaxableExitTax(fsc, scA * y);
+    const totAT = fpnAT + fisAT + flpAT + fscAT;
+
+    const inf = Math.pow(1 + INF / 100, y);
+    rows.push({
+      y, yr: null, ret: null,
+      fpn: Math.round(fpn), fis: Math.round(fis),
+      flp: Math.round(flp), fsc: Math.round(fsc),
+      tot: Math.round(tot), totAT: Math.round(totAT),
+      realTot: Math.round(tot / inf),
+      realTotAT: Math.round(totAT / inf),
+      prin: Math.round(prin), prof: Math.round(tot - prin),
+      pensionProfit: Math.round((etf.noProxy ? 0 : (pensionProfitOnly + Math.max(0, isaTransferAmount) + Math.max(0, isaProfitRaw)))),
+      taxableProfit: Math.round(taxableProfit),
+      mdiv: Math.round(tot * d / 12),
+      realDiv: Math.round(tot * d / 12 / inf),
+      fpnAT: Math.round(fpnAT), fisAT: Math.round(fisAT),
+      flpAT: Math.round(flpAT), fscAT: Math.round(fscAT),
+      isaTransferAmount: Math.round(isaTransferAmount),
+      isaExtraRefund: Math.round(isaExtraRefund),
+      age, pensionTaxRate,
+      ext: false
+    });
+  }
+  return { rows, pnRef: annualBasePnRef, totalRef };
+}
+
+/**
+ * 과거 데이터 모드 계산 (연도별 실제 수익률 적용)
+ * @returns { rows, pnRef, totalRef, avgR, avgD, worstR, bestR }
+ */
+function calcHistorical() {
+  const hist = getHistData();
+  if (!hist.length) return calcManual();
+
+  const etf = getCurrentETF();
+  const effPN = etf.noProxy ? 0 : PN;
+  const effIS = etf.noProxy ? 0 : IS;
+  const pnA   = etf.noProxy ? 0 : PN_ANNUAL;  // 연간 납입액
+  const isA   = etf.noProxy ? 0 : IS_ANNUAL;  // 연간 납입액
+  const scA   = SC * 12;
+  const annualBasePnRef = etf.noProxy ? 0 : Math.min(pnA, 600) * (TAX_CREDIT_RATE / 100);
+  let pnB = 0, isB = 0, lpB = LP, scB = 0;
+  let isaPrincipalCycle = 0;
+  let totalRef = 0;
+  const rows = [];
+
+  for (let i = 0; i < hist.length; i++) {
+    const h = hist[i];
+    const histDiv = h.d / 100;
+    const histPrice = (h.r - h.d) / 100;
+    const arFull = h.r / 100;
+    const arTaxable = etf.listing === 'US'
+      ? histPrice + histDiv * (1 - 0.15)
+      : histPrice + histDiv * (1 - 0.154);
+
+    const mrFull = Math.pow(1 + arFull, 1 / 12) - 1;
+    const mrTaxable = Math.pow(1 + arTaxable, 1 / 12) - 1;
+
+    for (let m = 0; m < 12; m++) {
+      pnB = (pnB + effPN) * (1 + mrFull);
+      isB = (isB + effIS) * (1 + mrFull);
+      scB = (scB + SC) * (1 + mrTaxable);
+      isaPrincipalCycle += effIS;
+    }
+    lpB = lpB * (1 + arTaxable);
+
+    if (!etf.noProxy && annualBasePnRef > 0) {
+      pnB += annualBasePnRef;
+      totalRef += annualBasePnRef;
+    }
+
+    let isaTransferAmount = 0;
+    let isaExtraRefund = 0;
+    const yearNum = i + 1;
+    if (!etf.noProxy && shouldIsaTransfer(yearNum) && isB > 0) {
+      const isaAfterTaxMaturity = applyIsaMaturityTax(isB, isaPrincipalCycle);
+      isaTransferAmount = isaAfterTaxMaturity;
+      const baseDeductible = Math.min(pnA, 600);
+      const extraLimit = Math.min(isaTransferAmount * 0.1, 300);
+      const deductibleCapWithTransfer = 600 + extraLimit;
+      const deductibleWithTransfer = Math.min(pnA + isaTransferAmount, deductibleCapWithTransfer);
+      const additionalDeductible = Math.max(0, deductibleWithTransfer - baseDeductible);
+      isaExtraRefund = additionalDeductible * (TAX_CREDIT_RATE / 100);
+      pnB += isaTransferAmount + isaExtraRefund;
+      totalRef += isaExtraRefund;
+      isB = 0;
+      isaPrincipalCycle = 0;
+    }
+
+    const tot = pnB + isB + lpB + scB;
+    const prin = pnA * yearNum + isA * yearNum + scA * yearNum + LP;
+    const pensionProfitOnly = pnB - pnA * yearNum;
+    const isaProfitRaw = isB - isaPrincipalCycle;
+    const taxableProfit = lpB + scB - LP - scA * yearNum;
+
+    const ageH = ageAtYear(yearNum);
+    const pensionTaxRateH = getPensionTaxRate(ageH);
+    const fpnAT = Math.round(pnB * (1 - pensionTaxRateH));
+    const fisAT = Math.round((!etf.noProxy && shouldIsaTransfer(yearNum)) ? 0 : applyIsaMaturityTax(isB, isaPrincipalCycle));
+    const flpAT = Math.round(applyTaxableExitTax(lpB, LP));
+    const fscAT = Math.round(applyTaxableExitTax(scB, scA * yearNum));
+
+    const inf = Math.pow(1 + INF / 100, yearNum);
+    rows.push({
+      y: yearNum, yr: h.yr, ret: h.r, dv: h.d,
+      fpn: Math.round(pnB), fis: Math.round(isB),
+      flp: Math.round(lpB), fsc: Math.round(scB),
+      tot: Math.round(tot), totAT: Math.round(fpnAT + fisAT + flpAT + fscAT),
+      realTot: Math.round(tot / inf),
+      realTotAT: Math.round((fpnAT + fisAT + flpAT + fscAT) / inf),
+      prin: Math.round(prin), prof: Math.round(tot - prin),
+      pensionProfit: Math.round((etf.noProxy ? 0 : (pensionProfitOnly + Math.max(0, isaTransferAmount) + Math.max(0, isaProfitRaw)))),
+      taxableProfit: Math.round(taxableProfit),
+      mdiv: Math.round(tot * (h.d / 100) / 12),
+      realDiv: Math.round(tot * (h.d / 100) / 12 / inf),
+      fpnAT, fisAT, flpAT, fscAT,
+      isaTransferAmount: Math.round(isaTransferAmount),
+      isaExtraRefund: Math.round(isaExtraRefund),
+      age: ageH, pensionTaxRate: pensionTaxRateH,
+      ext: h.ext
+    });
+  }
+
+  const avgR = hist.reduce((s, x) => s + x.r, 0) / hist.length;
+  const avgD = hist.reduce((s, x) => s + x.d, 0) / hist.length;
+  const worstR = Math.min(...hist.map(x => x.r));
+  const bestR = Math.max(...hist.map(x => x.r));
+  return { rows, pnRef: annualBasePnRef, totalRef, avgR, avgD, worstR, bestR };
+}
+
+/* ── 포맷 헬퍼 ─────────────────────────────────────────────── */
+
+/** 억/만원 단위 포맷 (전체) */
+function fmt(n) {
+  if (Math.abs(n) >= 10000) {
+    const u = Math.floor(n / 10000);
+    const m = Math.round(n % 10000);
+    return m > 0 ? `${u}억 ${m.toLocaleString()}만원` : `${u}억원`;
+  }
+  return `${Math.round(n).toLocaleString()}만원`;
+}
+
+/** 억/만 단위 짧은 포맷 (차트용) */
+function fS(n) {
+  if (Math.abs(n) >= 10000) return `${(n / 10000).toFixed(1)}억`;
+  return `${Math.round(n).toLocaleString()}만`;
+}
+
+
+/**
+ * charts.js — Chart.js 차트 렌더링
+ *
+ * 새 차트 추가 시 이 파일에 drawXxx() 함수를 추가하고
+ * ui.js의 render() 에서 호출하세요.
+ */
+
+
+
+/* ── 차트 인스턴스 (재사용을 위해 저장) ── */
+let gC  = null; // 자산 성장 차트
+let dC  = null; // 배당금 차트
+let rC  = null; // 과거 수익률 차트
+let iC  = null; // 명목 vs 실질 차트
+
+const GC = 'rgba(255,255,255,0.05)'; // 그리드 색
+const TC = '#555f7a';                  // 축 텍스트 색
+
+/** 차트 인스턴스를 안전하게 파괴 */
+function destroyChart(chart) {
+  if (chart) { chart.destroy(); }
+  return null;
+}
+
+/* ── 명목 vs 실질 구매력 차트 ── */
+function drawInflChart(rows, labels) {
+  iC = destroyChart(iC);
+  iC = new Chart(document.getElementById('inflChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'명목 자산', data: rows.map(r => r.tot),
+          borderColor:'#7c6dfa', backgroundColor:'rgba(124,109,250,.06)',
+          fill:true, tension:.4, pointRadius:2, borderWidth:2 },
+        { label:'실질 구매력', data: rows.map(r => r.realTot),
+          borderColor:'#f06060', backgroundColor:'rgba(240,96,96,.06)',
+          fill:true, tension:.4, pointRadius:2, borderWidth:2 },
+        { label:'실질 세후', data: rows.map(r => r.realTotAT),
+          borderColor:'#2dd4a0', backgroundColor:'rgba(45,212,160,.06)',
+          fill:true, tension:.4, pointRadius:2, borderWidth:2, borderDash:[4,3] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ` ${fS(c.raw)}원` } }
+      },
+      scales: {
+        x: { grid:{color:GC}, ticks:{color:TC, font:{size:10}, autoSkip:true, maxTicksLimit:10} },
+        y: { grid:{color:GC}, ticks:{color:TC, font:{size:10}, callback: v => fS(v)} }
+      }
+    }
+  });
+}
+
+/* ── 자산 성장 막대 차트 ── */
+function drawGrowthChart(rows, labels) {
+  gC = destroyChart(gC);
+  const etf = getCurrentETF();
+  const datasets = [
+    { label:'원금', data: rows.map(r => r.prin), backgroundColor:'#3b3d6b', stack:'a' }
+  ];
+  if (!etf.noProxy) {
+    datasets.push({ label:'연금·ISA수익', data: rows.map(r => r.pensionProfit || 0), backgroundColor:'#1D9E75', stack:'a' });
+  }
+  datasets.push({ label:'일반계좌수익', data: rows.map(r => r.taxableProfit || 0), backgroundColor:'#BA7517', stack:'a' });
+
+  gC = new Chart(document.getElementById('growthChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { footer: i => `합계: ${fS(i.reduce((s,x)=>s+x.raw,0))}원` } }
+      },
+      scales: {
+        x: { stacked:true, grid:{color:GC}, ticks:{color:TC, font:{size:10}, autoSkip:true, maxTicksLimit:10} },
+        y: { stacked:true, grid:{color:GC}, ticks:{color:TC, font:{size:10}, callback: v => fS(v)} }
+      }
+    }
+  });
+}
+
+/* ── 배당금 차트 (월 배당 / 누적 배당 탭) ── */
+function drawDivChart(rows, labels) {
+  dC = destroyChart(dC);
+
+  const dd  = rows.map(r => Math.round(r.mdiv));
+  const rdd = rows.map(r => Math.round(r.realDiv));
+  let cum = 0, rcum = 0;
+  const cd  = rows.map(r => { cum  += Math.round(r.mdiv);    return cum;  });
+  const rcd = rows.map(r => { rcum += Math.round(r.realDiv); return rcum; });
+
+  // 범례 업데이트
+  document.getElementById('divLeg').innerHTML = TAB === 'm'
+    ? '<span class="li"><span class="ld" style="background:#2dd4a0"></span>명목 배당환산액</span><span class="li"><span class="ld" style="background:#f06060"></span>실질 배당환산액</span>'
+    : '<span class="li"><span class="ld" style="background:#7c6dfa"></span>명목 누적</span><span class="li"><span class="ld" style="background:#f06060"></span>실질 누적</span>';
+
+  if (TAB === 'm') {
+    dC = new Chart(document.getElementById('divChart'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label:'명목 배당환산액', data: dd,  backgroundColor:'#1D9E75', borderRadius:2 },
+        { label:'실질 배당환산액', data: rdd, backgroundColor:'#f06060', borderRadius:2 }
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: c => ` ${c.dataset.label}: ${c.raw.toLocaleString()}만원`,
+            footer: i => {
+              if (i.length >= 2 && i[0] && i[1]) {
+                const gap = i[0].raw - i[1].raw;
+                return gap > 0 ? `구매력 손실: -${Math.round(gap).toLocaleString()}만원` : '';
+              }
+              return '';
+            }
+          }}
+        },
+        scales: {
+          x: { grid:{color:GC}, ticks:{color:TC, font:{size:10}, autoSkip:true, maxTicksLimit:10} },
+          y: { grid:{color:GC}, ticks:{color:TC, font:{size:10}, callback: v => v.toLocaleString()+'만'} }
+        }
+      }
+    });
+  } else {
+    dC = new Chart(document.getElementById('divChart'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label:'명목 누적', data: cd,
+          borderColor:'#7c6dfa', backgroundColor:'rgba(124,109,250,.08)',
+          fill:true, tension:.4, pointRadius:2, borderWidth:2 },
+        { label:'실질 누적', data: rcd,
+          borderColor:'#f06060', backgroundColor:'rgba(240,96,96,.08)',
+          fill:true, tension:.4, pointRadius:2, borderWidth:2, borderDash:[4,3] }
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.toLocaleString()}만원` } }
+        },
+        scales: {
+          x: { grid:{color:GC}, ticks:{color:TC, font:{size:10}, autoSkip:true, maxTicksLimit:10} },
+          y: { grid:{color:GC}, ticks:{color:TC, font:{size:10}, callback: v => v.toLocaleString()+'만'} }
+        }
+      }
+    });
+  }
+}
+
+/* ── 과거 수익률 막대 차트 (히스토리 모드) ── */
+function drawRetChart(rows, labels) {
+  rC = destroyChart(rC);
+  const rd = rows.map(r => r.ret || 0);
+  rC = new Chart(document.getElementById('retChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: rd, backgroundColor: rd.map(v => v >= 0 ? '#2dd4a0' : '#f06060'), borderRadius:2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ` ${c.raw > 0 ? '+' : ''}${c.raw}%` } }
+      },
+      scales: {
+        x: { grid:{color:GC}, ticks:{color:TC, font:{size:9}, autoSkip:true, maxTicksLimit:12} },
+        y: { grid:{color:GC}, ticks:{color:TC, font:{size:9}, callback: v => v+'%'} }
+      }
+    }
+  });
+}
+
+/* ── 타임라인 Canvas 그리기 ── */
+function drawTimeline() {
+  const c = document.getElementById('tlCanvas');
+  if (!c) return;
+  const W = c.parentElement.offsetWidth || 280;
+  const H = 52;
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  const span = MAX_Y - MIN_Y;
+  const x = yr => (yr - MIN_Y) / span * W;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#2a2a2a';
+  ctx.beginPath(); ctx.roundRect(0, 15, W, 16, 3); ctx.fill();
+
+  CRISES.forEach(cr => {
+    ctx.fillStyle = cr.color + '90';
+    ctx.fillRect(x(cr.s), 15, x(cr.e + 1) - x(cr.s), 16);
+  });
+
+  const sx = x(HS), ex = x(HE + 1);
+  ctx.fillStyle = 'rgba(124,109,250,0.3)';
+  ctx.fillRect(sx, 13, ex - sx, 20);
+  ctx.strokeStyle = '#7c6dfa'; ctx.lineWidth = 2;
+  [sx, ex].forEach(px => { ctx.beginPath(); ctx.moveTo(px, 11); ctx.lineTo(px, 37); ctx.stroke(); });
+  ctx.fillStyle = '#7c6dfa';
+  [sx, ex].forEach(px => { ctx.beginPath(); ctx.arc(px, 23, 5, 0, Math.PI * 2); ctx.fill(); });
+
+  const row = document.getElementById('tlYearRow');
+  row.innerHTML = '';
+  [1990, 1995, 2000, 2005, 2010, 2015, 2020, 2024].forEach(y => {
+    row.innerHTML += `<span style="position:absolute;left:${(y - MIN_Y) / span * 100}%;transform:translateX(-50%)">${y}</span>`;
+  });
+}
+
+
+/**
+ * ui.js — DOM 조작, 이벤트 핸들러, 렌더링
+ *
+ * 이 파일은 화면을 그리고 사용자 입력을 처리합니다.
+ * 계산 로직은 calculator.js, 차트는 charts.js에 있어요.
+ */
+
+
+
+/* ── 사이드바 상태 업데이트 ─────────────────────────────────── */
+function updateSidebar() {
+  const pnA = PN_ANNUAL, isA = IS_ANNUAL;
+  const pnRef = Math.min(pnA, 600) * (TAX_CREDIT_RATE / 100);
+
+  // 연금저축 바는 updatePensionLabel()에서 처리
+  updatePensionLabel();
+  // ISA 바는 updateISALabel()에서 처리
+  updateISALabel();
+  document.getElementById('pnR').textContent = `연 기본 ${Math.round(pnRef).toLocaleString()}만원${ISA_TRANSFER_ENABLED ? ' + 3년마다 ISA이전(이전금액 자체 포함)' : ''} (현재 공제율 ${TAX_CREDIT_RATE.toFixed(1)}%)`; 
+  const salaryBandEl = document.getElementById('salaryBand');
+  if (salaryBandEl) salaryBandEl.value = SALARY_BAND;
+  // pnLimPct는 updatePensionLabel()에서 처리
+  document.getElementById('monthlyTotal').textContent = `${Math.round(PN_ANNUAL/12 + IS_ANNUAL/12 + SC).toLocaleString()}만원`;
+}
+
+/* ── ETF 변경 시 UI 갱신 ──────────────────────────────────── */
+function refreshETFUI() {
+  const etf = getCurrentETF();
+  const noProxy = !!etf.noProxy;
+
+  // 헤더
+  const nameEl  = document.getElementById('selectedEtfName');
+  const badgeEl = document.getElementById('taxModeBadge');
+  if (nameEl)  nameEl.textContent  = `${etf.display} · ${etf.group} · 만원 단위 설정`;
+  if (badgeEl) badgeEl.textContent = noProxy ? '일반계좌 전용 (ISA·연금저축 불가)'
+    : etf.listing === 'US' ? '직투 + 절세계좌 대체 ETF 모드' : '국내상장 ETF 직접 적용 모드';
+
+  const growthTitleEl = document.getElementById('growthTitle');
+  if (growthTitleEl) growthTitleEl.textContent = noProxy ? '자산 성장 추이 (세전 · 일반계좌 전용)' : '자산 성장 추이 (세전)';
+
+  // 배당 슬라이더 범위 & 평균 안내 박스 업데이트
+  const ds = document.getElementById('dS');
+  if (ds) { ds.min = etf.dividendRange[0]; ds.max = etf.dividendRange[1]; }
+  const divAvgLabel = document.getElementById('divAvgLabel');
+  const divAvgNote  = document.getElementById('divAvgNote');
+  if (divAvgLabel) divAvgLabel.textContent = `역사적 평균 배당: ${etf.dividendAvg}%`;
+  if (divAvgNote)  divAvgNote.textContent  = etf.dividendNote;
+
+  // 배당 박스 색상: 배당이 낮으면 회색 계열, 높으면 초록 계열
+  const divAvgBox = document.getElementById('divAvgBox');
+  if (divAvgBox) {
+    if (etf.dividendAvg <= 0.5) {
+      divAvgBox.style.background = 'rgba(139,146,168,0.07)';
+      divAvgBox.style.borderColor = 'rgba(139,146,168,0.25)';
+      if (divAvgLabel) divAvgLabel.style.color = '#8b92a8';
+    } else if (etf.dividendAvg >= 5) {
+      divAvgBox.style.background = 'rgba(245,166,35,0.07)';
+      divAvgBox.style.borderColor = 'rgba(245,166,35,0.25)';
+      if (divAvgLabel) divAvgLabel.style.color = '#f5a623';
+    } else {
+      divAvgBox.style.background = 'rgba(45,212,160,0.07)';
+      divAvgBox.style.borderColor = 'rgba(45,212,160,0.25)';
+      if (divAvgLabel) divAvgLabel.style.color = '#2dd4a0';
+    }
+  }
+
+  // 섹션 제목
+  const lumpTitle    = document.getElementById('lumpSecTitle');
+  const scTitle      = document.getElementById('scSecTitle');
+  const pensionTitle = document.getElementById('pensionSecTitle');
+  const isaTitle     = document.getElementById('isaSecTitle');
+  if (lumpTitle) lumpTitle.textContent = `목돈 (일반계좌 · ${etf.display} 직접매수)`;
+  if (scTitle)   scTitle.textContent   = `일반계좌 ${etf.display} 직투 (월 납입)`;
+
+  // 연금저축·ISA 비활성화 처리 (3배 레버리지)
+  const pensionInputs = document.getElementById('pensionInputs');
+  const isaInputs     = document.getElementById('isaInputs');
+  const pensionMsg    = document.getElementById('pensionDisabledMsg');
+  const isaMsg        = document.getElementById('isaDisabledMsg');
+
+  if (noProxy) {
+    if (PN_ANNUAL > 0) SAVED_PN = PN_ANNUAL;
+    if (IS_ANNUAL > 0) SAVED_IS = IS_ANNUAL;
+    if (pensionInputs) { pensionInputs.style.opacity = '0.35'; pensionInputs.style.pointerEvents = 'none'; }
+    if (isaInputs)     { isaInputs.style.opacity = '0.35';     isaInputs.style.pointerEvents = 'none'; }
+    if (pensionMsg) pensionMsg.style.display = 'block';
+    if (isaMsg)     isaMsg.style.display = 'block';
+    if (pensionTitle) pensionTitle.textContent = '연금저축펀드 (투자 불가)';
+    if (isaTitle)     isaTitle.textContent     = 'ISA (투자 불가)';
+    PN = 0; PN_ANNUAL = 0; IS = 0; IS_ANNUAL = 0;
+    ['pnS','pnN'].forEach(id => { const el = document.getElementById(id); if (el) el.value = 0; });
+    ['isS','isN'].forEach(id => { const el = document.getElementById(id); if (el) el.value = 0; });
+    document.getElementById('pnL').textContent = '0만원';
+    updateISALabel();
+  } else {
+    if (PN_ANNUAL === 0 && SAVED_PN > 0) { PN_ANNUAL = SAVED_PN; PN = Math.round(PN_ANNUAL / 12 * 10) / 10; }
+    if (IS_ANNUAL === 0 && SAVED_IS > 0) { IS_ANNUAL = SAVED_IS; IS = Math.round(IS_ANNUAL / 12 * 10) / 10; }
+    if (pensionInputs) { pensionInputs.style.opacity = ''; pensionInputs.style.pointerEvents = ''; }
+    if (isaInputs)     { isaInputs.style.opacity = '';     isaInputs.style.pointerEvents = ''; }
+    if (pensionMsg) pensionMsg.style.display = 'none';
+    if (isaMsg)     isaMsg.style.display = 'none';
+    if (pensionTitle) pensionTitle.textContent = `연금저축펀드 (${etf.pensionProxy || 'TIGER'} · 월 납입)`;
+    if (isaTitle)     isaTitle.textContent     = `ISA (${etf.isaProxy || 'TIGER'} · 연간 납입)`;
+    ['pnS','pnN'].forEach(id => { const el = document.getElementById(id); if (el) el.value = PN_ANNUAL; });
+    ['isS','isN'].forEach(id => { const el = document.getElementById(id); if (el) el.value = IS_ANNUAL; });
+    updatePensionLabel();
+    updateISALabel();
+  }
+
+  // ETF 설명 박스
+  const helpEl = document.getElementById('etfTaxHelp');
+  if (helpEl) {
+    if (noProxy) {
+      helpEl.innerHTML = `<b>${etf.display}</b>는 3배 레버리지 ETF로 국내 ISA·연금저축에서 투자 불가합니다.<br>
+        일반계좌(목돈·월납입)에서만 투자할 수 있어요.<br>
+        <span style="color:#f06060">⚠️ 레버리지 ETF는 변동성이 매우 크고 장기 보유 시 변동성 감쇄(Volatility Decay)로 예상보다 낮은 수익이 날 수 있어요.</span>`;
+    } else if (etf.listing === 'US') {
+      helpEl.innerHTML = `<b>${etf.display}</b> 선택 시<br>
+        ① 일반계좌는 <b>${etf.display}</b> 직투 기준으로 계산<br>
+        ② ISA는 <b>${etf.isaProxy}</b>로 대체 계산<br>
+        ③ 연금저축펀드는 <b>${etf.pensionProxy}</b>로 대체 계산<br>
+        <span style="color:var(--text3)">${etf.proxyNote}</span>`;
+    } else {
+      helpEl.innerHTML = `<b>${etf.display}</b> 선택 시 일반계좌·ISA·연금저축펀드 모두 동일 ETF 기준으로 계산합니다.`;
+    }
+  }
+}
+
+/* ── 과거 데이터 범위 UI 업데이트 ─────────────────────────── */
+function updateRangeUI() {
+  document.getElementById('hsS').value = HS;
+  document.getElementById('heS').value = HE;
+  document.getElementById('hsL').textContent = HS;
+  document.getElementById('heL').textContent = HE;
+
+  const overlapEl = document.getElementById('overlapInfo');
+  const badgeEl   = document.getElementById('rangeBadge');
+
+  if (HIST_MODE === 'crisis' && SELECTED_CRISIS !== null) {
+    const crisis = CRISES.find(c => c.key === SELECTED_CRISIS);
+    if (crisis) {
+      badgeEl.textContent = `${crisis.name} — ${crisis.s}년 투자 시작`;
+      badgeEl.style.background = crisis.color + '25';
+      badgeEl.style.color = crisis.color;
+      if (overlapEl) overlapEl.innerHTML = `<span style="color:${crisis.color}">${crisis.desc}</span>`;
+      // 선택 배너 업데이트
+      const banner = document.getElementById('crisisSelectedBanner');
+      if (banner) {
+        banner.style.display = '';
+        banner.style.background = crisis.color + '15';
+        banner.style.border = `1px solid ${crisis.color}40`;
+        banner.innerHTML = `<b style="color:${crisis.color}">${crisis.name}</b> 선택됨<br>
+          <span style="color:var(--text3)">${crisis.s}년 최악의 타이밍 투자 시작 → 2024년까지 실제 데이터 + 이후 ETF 평균 연장</span>`;
+      }
+    }
+  } else {
+    const banner = document.getElementById('crisisSelectedBanner');
+    if (banner) banner.style.display = 'none';
+    // 단일 범위 모드
+    badgeEl.textContent = `${HS}년 ~ ${HE}년 (${HE - HS + 1}년 데이터)`;
+    badgeEl.style.background = '';
+    badgeEl.style.color = '';
+
+    const over = CRISES.filter(c => c.s <= HE && c.e >= HS);
+    overlapEl.innerHTML = over.length
+      ? '포함 위기: ' + over.map(c => `<span style="color:${c.color};font-weight:500">${c.name}</span>`).join(', ')
+      : '주요 경제위기 없는 구간';
+  }
+
+  CRISES.forEach((c, i) => {
+    const el = document.getElementById(`ci_${i}`);
+    if (el) {
+      const isSel = SELECTED_CRISIS === c.key;
+      el.classList.toggle('hl', isSel);
+      el.style.borderColor = isSel ? c.color : '';
+      el.style.background  = isSel ? `${c.color}18` : '';
+    }
+  });
+  drawTimeline();
+}
+
+/* ── 경제위기 카드 멀티 선택 ───────────────────────────────── */
+let SELECTED_CRISIS = null; // 선택된 위기 키 (단일 선택)
+
+function buildCrisisGrid() {
+  document.getElementById('crisisGrid').innerHTML = CRISES.map((c, i) => `
+    <div class="ci" id="ci_${i}" onclick="selectCrisis('${c.key}')"
+         title="${c.note || c.desc}" style="cursor:pointer">
+      <span class="ci-dot" style="background:${c.color}"></span>
+      <div style="min-width:0">
+        <div class="ci-name">${c.name}</div>
+        <div class="ci-per">${c.period}</div>
+        <div class="ci-desc">${c.desc}</div>
+      </div>
+    </div>`).join('');
+}
+
+/** 위기 카드 단일 선택 — 같은 카드 재클릭 시 해제 */
+function selectCrisis(key) {
+  if (SELECTED_CRISIS === key) {
+    // 선택 해제 → 수동 모드로 복귀
+    SELECTED_CRISIS = null;
+    CRISIS_AGE = null;
+    HS = 1995; HE = 2005;
+    switchInvestorPanel(false);
+  } else {
+    SELECTED_CRISIS = key;
+    const crisis = CRISES.find(c => c.key === key);
+    if (crisis) {
+      HS = crisis.s;
+      HE = MAX_Y;
+      // 위기 패널로 전환 — 당시 나이 기본값 = 현재 나이
+      CRISIS_AGE = USER_AGE;
+      switchInvestorPanel(true, crisis);
+    }
+  }
+  const hsSel = document.getElementById('hsS');
+  const heSel = document.getElementById('heS');
+  if (hsSel) hsSel.value = HS;
+  if (heSel) heSel.value = HE;
+  applySelectedCrises();
+}
+
+/**
+ * 투자자 정보 패널 전환
+ * @param {boolean} isCrisis - 위기 모드면 true
+ * @param {object} crisis - 위기 데이터 객체
+ */
+function switchInvestorPanel(isCrisis, crisis) {
+  const normal = document.getElementById('normalInvestorPanel');
+  const crisisPanel = document.getElementById('crisisInvestorPanel');
+  const header = document.getElementById('crisisInvestorHeader');
+  const startYearDisp = document.getElementById('crisisStartYearDisplay');
+  const contextNote = document.getElementById('crisisContextNote');
+  const ageS = document.getElementById('crisisAgeS');
+  const ageN = document.getElementById('crisisAgeN');
+  const ageL = document.getElementById('crisisAgeL');
+
+  if (!isCrisis) {
+    if (normal) normal.style.display = '';
+    if (crisisPanel) crisisPanel.style.display = 'none';
+    // 수동 모드 복귀 시 START_YEAR 원복
+    START_YEAR = new Date().getFullYear();
+    const syN = document.getElementById('startYearN');
+    if (syN) syN.value = START_YEAR;
+    const periodLbl = document.getElementById('periodLabel');
+    if (periodLbl) periodLbl.textContent = '투자 기간 (목표나이 − 현재나이)';
+    updatePensionBanner();
+    return;
+  }
+
+  if (normal) normal.style.display = 'none';
+  if (crisisPanel) crisisPanel.style.display = '';
+
+  // 헤더 스타일
+  if (header) {
+    header.style.background = crisis.color + '18';
+    header.style.border = `1px solid ${crisis.color}45`;
+    // 왼쪽: 위기명, 오른쪽: 해제 버튼 — 각각 별도 span으로 분리
+    header.innerHTML =
+      `<span style="color:${crisis.color};font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">📌 ${crisis.name}</span>` +
+      `<button onclick="selectCrisis('${crisis.key}')" style="flex:0 0 auto;margin-left:8px;padding:2px 8px;font-size:10px;border:1px solid ${crisis.color}60;border-radius:4px;background:transparent;color:${crisis.color};cursor:pointer;white-space:nowrap">✕ 해제</button>`;
+  }
+
+  // 투자 시작 연도 자동 설정
+  START_YEAR = crisis.s;
+  if (startYearDisp) startYearDisp.textContent = crisis.s + '년';
+
+  // 당시 나이 슬라이더 초기화
+  const initAge = CRISIS_AGE || USER_AGE;
+  if (ageS) ageS.value = initAge;
+  if (ageN) ageN.value = initAge;
+  if (ageL) ageL.textContent = initAge + '세';
+
+  // 투자 기간 라벨 업데이트
+  const periodLbl = document.getElementById('periodLabel');
+  if (periodLbl) periodLbl.textContent = '투자 기간 (목표나이 − 당시나이)';
+
+  // 맥락 설명
+  updateCrisisContext(crisis);
+  updatePensionBanner();
+}
+
+/** 위기 시나리오 맥락 설명 업데이트 */
+function updateCrisisContext(crisis) {
+  const note = document.getElementById('crisisContextNote');
+  if (!note || !crisis) return;
+  const age = CRISIS_AGE !== null ? CRISIS_AGE : USER_AGE;
+  const target = TARGET_AGE;
+  const years = Math.max(0, target - age);
+  const endYear = crisis.s + years - 1;
+
+  // 55세 도달 연도 & 연차
+  const yearsTo55 = Math.max(0, 55 - age);
+  const year55 = crisis.s + yearsTo55;
+  const reaches55 = target > 55 && age < 55;
+  const alreadyOver55 = age >= 55;
+
+  // 70세 도달 여부
+  const yearsTo70 = Math.max(0, 70 - age);
+  const year70 = crisis.s + yearsTo70;
+  const reaches70 = target > 70 && age < 70;
+
+  // 세율 구간 요약 문자열
+  let taxSummary = '';
+  if (alreadyOver55) {
+    taxSummary = `<b style="color:var(--teal)">5.5%</b>로 시작`;
+    if (reaches70) taxSummary += ` → ${year70}년(70세)부터 <b style="color:var(--teal)">4.4%</b>`;
+  } else if (!reaches55) {
+    // 목표나이까지 55세 못 미침 → 조기인출세 내내
+    taxSummary = `전 기간 <b style="color:#f06060">16.5%</b> (${crisis.s}~${endYear}년, 55세 미달)`;
+  } else {
+    taxSummary = `${crisis.s}~${year55-1}년 <b style="color:#f06060">16.5%</b>`;
+    taxSummary += ` → ${year55}년(55세)부터 <b style="color:var(--teal)">5.5%</b>`;
+    if (reaches70) taxSummary += ` → ${year70}년(70세)부터 <b style="color:var(--teal)">4.4%</b>`;
+  }
+
+  note.innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:baseline">
+      <span>${crisis.s}년 <b style="color:var(--amber)">${age}세</b> 투자 시작</span>
+      <span style="color:var(--text3)">→</span>
+      <span><b style="color:var(--purple)">${target}세</b>까지 <b>${years}년</b></span>
+      <span style="color:var(--text3)">(${crisis.s}~${endYear}년)</span>
+    </div>
+    <div style="margin-top:4px">연금 세율: ${taxSummary}</div>`;
+}
+
+function applySelectedCrises() {
+  CRISES.forEach((c, i) => {
+    const el = document.getElementById(`ci_${i}`);
+    if (el) {
+      const isSel = SELECTED_CRISIS === c.key;
+      el.classList.toggle('hl', isSel);
+      el.style.borderColor = isSel ? c.color : '';
+      el.style.background  = isSel ? `${c.color}18` : '';
+    }
+  });
+  updateRangeUI();
+  render();
+}
+
+function jumpTo(s, e) {
+  HS = s; HE = Math.min(e, MAX_Y);
+  updateRangeUI(); render();
+}
+
+/* ── 메인 렌더 ─────────────────────────────────────────────── */
+function render() {
+  updateSidebar();
+  updatePensionBanner();
+
+  const data = HMODE ? calcHistorical() : calcManual();
+  const { rows, totalRef } = data;
+  if (!rows || !rows.length) return;
+
+  const last   = rows[rows.length - 1];
+  const mid    = rows[Math.ceil(rows.length / 2) - 1] || rows[0];
+  const labels = rows.map(r => HMODE ? (r.ext ? '~' : '') + r.yr + '년' : r.y + '년차');
+
+  // 과거 데이터 통계 & 수익률 차트
+  if (HMODE && data.avgR !== undefined) {
+    // 다중 선택 시 COVID 한계 경고 표시
+    const covidSelected = SELECTED_CRISIS === 'covid';
+    const covidWarn = covidSelected
+      ? `<div style="grid-column:1/-1;font-size:10px;color:#f5a623;padding:5px 8px;background:rgba(245,166,35,0.08);border-radius:5px;border:1px solid rgba(245,166,35,0.2)">⚠️ COVID 선택됨: 연간 데이터 기준으로 2020년 연간수익(QQQ +49%)이 반영됩니다. 실제 -34% 폭락은 월별 데이터 없이 재현 불가.</div>`
+      : '';
+
+    const _cObj = SELECTED_CRISIS ? CRISES.find(c => c.key === SELECTED_CRISIS) : null;
+    const crisisStartYr = _cObj ? _cObj.s : null;
+    const histYears = rows.filter(r => !r.ext).length;
+    const extYears  = rows.filter(r => r.ext).length;
+    const crisisModeBanner = SELECTED_CRISIS !== null
+      ? `<div style="grid-column:1/-1;font-size:10px;color:#7c6dfa;padding:6px 9px;background:rgba(124,109,250,0.08);border-radius:5px;border:1px solid rgba(124,109,250,0.2);line-height:1.6">
+          📌 <b>${crisisStartYr}년 최악의 타이밍</b>, 당시 나이 <b>${CRISIS_AGE || USER_AGE}세</b>로 투자 시작<br>
+          실데이터 <b>${histYears}년</b>${extYears > 0 ? ` + ETF 평균 연장 <b>${extYears}년</b>` : ''} → 목표 나이 <b>${TARGET_AGE}세</b>까지 시뮬레이션
+         </div>` : '';
+    document.getElementById('statGrid').innerHTML = `
+      <div class="met"><div class="met-l">${SELECTED_CRISIS !== null ? '위기 기간' : '사용 연도수'}</div><div class="met-v" style="font-size:13px">${data.rows ? data.rows.filter(r=>!r.ext).length : 0}년</div></div>
+      <div class="met"><div class="met-l">연평균 수익률</div><div class="met-v" style="font-size:13px">${data.avgR > 0 ? '+' : ''}${Math.round(data.avgR * 10) / 10}%</div></div>
+      <div class="met"><div class="met-l">최고 연수익</div><div class="met-v te" style="font-size:13px">+${data.bestR}%</div></div>
+      <div class="met"><div class="met-l">최저 연수익</div><div class="met-v" style="font-size:13px;color:#f06060">${data.worstR}%</div></div>
+      ${covidWarn}
+      ${crisisModeBanner}`;
+    drawRetChart(rows, labels);
+  } else {
+    rC = destroyChart(rC);
+    document.getElementById('statGrid').innerHTML = '';
+  }
+  document.getElementById('retHead').style.display = HMODE ? '' : 'none';
+
+  // 요약 지표 카드
+  document.getElementById('metArea').innerHTML = `
+    <div class="met"><div class="met-l">총 납입 원금</div><div class="met-v" style="font-size:14px">${fS(last.prin)}원</div></div>
+    <div class="met"><div class="met-l">총 수익 (세전)</div><div class="met-v te" style="font-size:14px">+${fS(last.prof)}원</div></div>
+    <div class="met"><div class="met-l">연금 세액공제 환급 누적(추정)</div><div class="met-v am" style="font-size:14px">${fS(totalRef)}원</div><div style="font-size:10px;color:#555f7a;margin-top:2px">기본 600만원 한도 + ${ISA_TRANSFER_ENABLED ? '3년마다 ISA이전 해 추가한도 반영' : 'ISA이전 해 추가한도 미반영'}</div></div>
+    <div class="met">
+      <div class="met-l">배당환산액 (${YR}년차) <span style="font-size:9px;color:var(--text3)">※연금·ISA 재투자</span></div>
+      <div class="met-v" style="font-size:14px;color:#7c6dfa">${Math.round(last.mdiv).toLocaleString()}만원</div>
+      <div style="font-size:10px;color:#f06060;margin-top:2px">실질 ${Math.round(last.realDiv).toLocaleString()}만원</div>
+    </div>`;
+
+  // 총 자산 박스
+  const selCrisisNames = SELECTED_CRISIS ? [SELECTED_CRISIS] : [].map(k => CRISES.find(c=>c.key===k)?.name).filter(Boolean).join(' + ');
+  const histBadge = HMODE
+    ? SELECTED_CRISIS !== null
+      ? `<span style="font-size:10px;padding:2px 8px;border-radius:99px;background:rgba(240,96,96,.2);color:#f06060">위기: ${selCrisisNames}</span>`
+      : `<span style="font-size:10px;padding:2px 8px;border-radius:99px;background:rgba(124,109,250,.2);color:#7c6dfa">${HS}~${HE}년</span>`
+    : '';
+  document.getElementById('totBox').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div>
+        <div style="font-size:12px;color:#8b92a8">${HMODE && SELECTED_CRISIS !== null ? rows.length + "년 위기 시뮬레이션 후" : YR + "년 후"} 총 자산 (명목·세전) ${histBadge}</div>
+        <div style="font-size:11px;color:#555f7a;margin-top:2px">배당환산액 ${Math.round(last.mdiv).toLocaleString()}만원 · ${Math.ceil(YR / 2)}년차 ${Math.round(mid.mdiv).toLocaleString()}만원 <span style="color:#3a4568">(연금·ISA는 재투자됨)</span></div>
+      </div>
+      <div style="font-size:22px;font-weight:700;color:#7c6dfa">${fmt(last.tot)}</div>
+    </div>
+    <div style="border-top:1px solid #2a3050;padding-top:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div>
+        <div style="font-size:12px;color:#8b92a8">세후 예상액
+          <span style="font-size:10px;color:${last.pensionTaxRate >= 0.165 ? '#f06060' : '#f5a623'}">
+            연금저축: ${last.age}세 → ${Math.round(last.pensionTaxRate * 1000) / 10}%${last.pensionTaxRate >= 0.165 ? ' ⚠ 55세 전 조기인출 패널티' : last.pensionTaxRate <= 0.033 ? ' (80세+ 최저세율)' : last.pensionTaxRate <= 0.044 ? ' (70~79세)' : ' (55~69세)'}
+          </span>
+        </div>
+        <div style="font-size:10px;color:#555f7a;margin-top:1px">일반계좌는 각 연도 말 전량 매도 가정 · 양도차익 22% 단순 반영 (연 250만 공제)</div>
+      </div>
+      <div style="font-size:19px;font-weight:600;color:#2dd4a0">${fmt(last.totAT)}</div>
+    </div>
+    <div style="border-top:1px solid #2a3050;padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:#1e1a2e;border-radius:7px;padding:10px 12px;border:1px solid #3a3060">
+        <div style="font-size:10px;color:#f06060;margin-bottom:4px">실질 구매력 (오늘 돈 기준, 세전)</div>
+        <div style="font-size:16px;font-weight:600;color:#f06060">${fmt(last.realTot)}</div>
+        <div style="font-size:10px;color:#555f7a;margin-top:2px">물가상승률 ${INF}% 적용</div>
+      </div>
+      <div style="background:#1a2520;border-radius:7px;padding:10px 12px;border:1px solid #1D9E75">
+        <div style="font-size:10px;color:#2dd4a0;margin-bottom:4px">실질 세후 구매력</div>
+        <div style="font-size:16px;font-weight:600;color:#2dd4a0">${fmt(last.realTotAT)}</div>
+        <div style="font-size:10px;color:#555f7a;margin-top:2px">실질 배당환산액 ${Math.round(last.realDiv).toLocaleString()}만원</div>
+      </div>
+    </div>`;
+
+  // 차트 그리기
+  drawInflChart(rows, labels);
+
+  const inflGap = last.tot - last.realTot;
+  document.getElementById('inflNote').textContent =
+    `물가 ${INF}% 기준 — ${YR}년 후 명목 ${fmt(last.tot)} vs 실질 ${fmt(last.realTot)} (구매력 손실 ${fmt(inflGap)})`;
+
+  drawGrowthChart(rows, labels);
+  drawDivChart(rows, labels);
+
+  // 계좌별 자산
+  const meta = getAccountMeta();
+  const accts = [
+    { name: meta.pensionName, v: last.fpn, at: last.fpnAT,  c: '#7c6dfa', n: meta.pensionNote },
+    { name: meta.isaName,     v: last.fis, at: last.fisAT,  c: '#2dd4a0', n: meta.isaNote },
+    { name: meta.lumpName,    v: last.flp, at: last.flpAT ?? null, c: '#f5a623', n: meta.taxableNote },
+    { name: meta.monthlyName, v: last.fsc, at: last.fscAT ?? null, c: '#F0997B', n: meta.taxableNote },
+  ];
+  document.getElementById('acctBreakdown').innerHTML = accts.filter(a => a.v > 0).map(a => `
+    <div class="acct-row">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:10px;height:10px;border-radius:2px;background:${a.c};display:inline-block;flex-shrink:0"></span>
+        <div>
+          <div style="font-size:13px;font-weight:500">${a.name}</div>
+          <div style="font-size:10px;color:#555f7a">${a.n}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:500">${fmt(a.v)}</div>
+        ${a.at !== null ? `<div style="font-size:11px;color:#2dd4a0">세후 ${fmt(a.at)}</div>` : ''}
+      </div>
+    </div>`).join('');
+
+  // 연도별 테이블
+  document.getElementById('tblBody').innerHTML = rows.map(r => {
+    // 과거 모드: 실제 연도(r.yr) 사용, 수동 모드: 시작연도+연차 계산
+    const calYear = HMODE && r.yr ? r.yr : (START_YEAR + r.y - 1);
+    const taxPct = Math.round(r.pensionTaxRate * 1000) / 10;
+    const taxColor = r.pensionTaxRate >= 0.165 ? '#f06060' : r.pensionTaxRate <= 0.033 ? '#2dd4a0' : '#f5a623';
+    // ISA 이전 발생 여부 표시
+    const isTransferYear = ISA_TRANSFER_ENABLED && r.isaTransferAmount > 0;
+    const isaCell = isTransferYear
+      ? `<td style="color:#f5a623;font-weight:500" title="이 해에 ISA 만기 → 연금저축으로 ${fS(r.isaTransferAmount)}원 이전됨">🔄 이전완료</td>`
+      : `<td>${fS(r.fis)}원</td>`;
+    const isCrisisRow = HMODE && r.isCrisis;
+    return `
+    <tr style="${isTransferYear ? 'background:rgba(245,166,35,0.05)' : isCrisisRow ? 'background:rgba(226,75,74,0.06)' : ''}">
+      <td>${r.y}년차</td>
+      <td style="color:var(--text3)">${calYear}${HMODE && r.ext ? ' (추정)' : ''}</td>
+      <td style="color:var(--text2)">${r.age}세</td>
+      <td style="color:${taxColor};font-weight:500">${taxPct}%${r.pensionTaxRate >= 0.165 ? ' ⚠' : ''}</td>
+      ${HMODE ? `<td class="${r.ret < 0 ? 'neg' : 'dc'}">${r.ret > 0 ? '+' : ''}${r.ret}%${r.isCrisis ? ' 🔴' : r.ext ? ' ~' : ''}</td>` : ''}
+      <td>${fS(r.fpn)}원${isTransferYear ? `<div style="font-size:9px;color:#f5a623">+${fS(r.isaTransferAmount)} 이전</div>` : ''}</td>
+      ${isaCell}
+      <td>${fS(r.flp)}원</td><td>${fS(r.fsc)}원</td>
+      <td class="tc">${fS(r.tot)}원</td>
+      <td style="color:#f06060;font-weight:500">${fS(r.realTot)}원</td>
+      <td class="dc" title="전체 자산 × 배당률 ÷ 12 (연금·ISA는 실제 수령 불가, 재투자됨)">${Math.round(r.mdiv).toLocaleString()}만</td>
+      <td style="color:#f5a623">${Math.round(r.realDiv).toLocaleString()}만</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── 이벤트 핸들러 ─────────────────────────────────────────── */
+
+// 과거 데이터 토글
+document.getElementById('toggleWrap').onclick = function () {
+  HMODE = !HMODE;
+  document.getElementById('ttrack').classList.toggle('on', HMODE);
+  document.getElementById('manualArea').style.display = HMODE ? 'none' : '';
+  document.getElementById('histArea').style.display   = HMODE ? '' : 'none';
+  // HMODE 끌 때 위기 패널 초기화
+  if (!HMODE) {
+    SELECTED_CRISIS = null;
+    CRISIS_AGE = null;
+    switchInvestorPanel(false);
+  }
+  if (HMODE) updateRangeUI();
+  render();
+};
+
+// ── 수익률 입력 핸들러 ───────────────────────────────────────
+
+/** PRICE_R + D → R 자동계산, 총 수익률 표시 UI 전체 동기화 */
+function syncRates() {
+  R = Math.round((PRICE_R + D) * 10) / 10;
+
+  const tot = document.getElementById('totalRateDisplay');
+  const pp  = document.getElementById('totalPriceP');
+  const dp  = document.getElementById('totalDivP');
+  const bp  = document.getElementById('totalBarPrice');
+  const bd  = document.getElementById('totalBarDiv');
+  const tn  = document.getElementById('taxEffNote');
+
+  if (tot) tot.textContent = R.toFixed(1) + '%';
+  if (pp)  pp.textContent  = PRICE_R.toFixed(1) + '%';
+  if (dp)  dp.textContent  = D.toFixed(1) + '%';
+
+  if (R > 0 && bp && bd) {
+    const pw = Math.round((PRICE_R / R) * 100);
+    bp.style.width = Math.max(0, pw) + '%';
+    bd.style.width = Math.max(0, 100 - pw) + '%';
+  }
+
+  if (tn) {
+    const etf = getCurrentETF();
+    const taxRate = etf.listing === 'US' ? 0.15 : 0.154;
+    const eff = Math.round((PRICE_R + D * (1 - taxRate)) * 10) / 10;
+    tn.textContent = `일반계좌 배당세 반영 복리 수익률(양도세 제외): 주가 ${PRICE_R.toFixed(1)}% + 배당 ${D.toFixed(1)}%×${(1 - taxRate).toFixed(2)} = ${eff.toFixed(1)}%`;
+  }
+
+  updateScenarioBtns();
+}
+
+/** 주가 상승률 슬라이더 */
+function onPriceR(v) {
+  PRICE_R = Math.round(parseFloat(v) * 10) / 10;
+  const el = document.getElementById('priceL');
+  const en = document.getElementById('priceN');
+  if (el) el.textContent = PRICE_R.toFixed(1) + '%';
+  if (en) en.value = PRICE_R.toFixed(1);
+  syncRates(); render();
+}
+/** 주가 상승률 숫자 직접 입력 */
+function onPriceRN(v) {
+  const parsed = parseFloat(v);
+  if (isNaN(parsed) || v === '' || v === '-') return; // 입력 중 무시
+  PRICE_R = Math.max(0, Math.min(40, Math.round(parsed * 10) / 10));
+  const el = document.getElementById('priceL');
+  const es = document.getElementById('priceS');
+  if (el) el.textContent = PRICE_R.toFixed(1) + '%';
+  if (es) es.value = PRICE_R;
+  syncRates(); render();
+}
+
+/** 배당 수익률 슬라이더 */
+function onD(v) {
+  D = Math.round(parseFloat(v) * 10) / 10;
+  const el = document.getElementById('dL');
+  const en = document.getElementById('dN');
+  if (el) el.textContent = D.toFixed(1) + '%';
+  if (en) en.value = D.toFixed(1);
+  // 역사적 평균 대비 차이 표시
+  const etf = getCurrentETF();
+  const avgVal = document.getElementById('divAvgVal');
+  if (avgVal) {
+    const typeStyles = {
+      none: { color:'#555f7a', icon:'📊' }, low:  { color:'#f5a623', icon:'💰' },
+      mid:  { color:'#2dd4a0', icon:'💰💰' }, high: { color:'#7c6dfa', icon:'💰💰💰' }
+    };
+    const s = typeStyles[etf.dividendType] || typeStyles.none;
+    const diff = D - etf.dividendAvg;
+    const diffStr = Math.abs(diff) < 0.05 ? ' (평균)' : diff > 0 ? ` (+${diff.toFixed(1)}%p)` : ` (${diff.toFixed(1)}%p)`;
+    avgVal.textContent = `${s.icon} ${etf.dividendAvg.toFixed(1)}%${diffStr}`;
+    avgVal.style.color = s.color;
+  }
+  syncRates(); render();
+}
+/** 배당 수익률 숫자 직접 입력 */
+function onDN(v) {
+  const parsed = parseFloat(v);
+  if (isNaN(parsed) || v === '' || v === '-') return;
+  D = Math.max(0, Math.min(15, Math.round(parsed * 10) / 10));
+  const el = document.getElementById('dL');
+  const es = document.getElementById('dS');
+  if (el) el.textContent = D.toFixed(1) + '%';
+  if (es) es.value = D;
+  syncRates(); render();
+}
+
+/** 연금저축 연간 납입액 슬라이더 */
+function syncPN(v) {
+  PN_ANNUAL = Math.round(parseInt(v) / 12) * 12 || 0; // 12의 배수로 맞춤
+  PN = Math.round(PN_ANNUAL / 12 * 10) / 10;
+  document.getElementById('pnN').value = PN_ANNUAL;
+  updatePensionLabel();
+  render();
+}
+/** 연금저축 연간 납입액 숫자 직접 입력 */
+function syncPNN(v) {
+  const parsed = parseInt(v);
+  if (isNaN(parsed) || v === '') return;
+  PN_ANNUAL = Math.max(0, Math.min(1800, Math.round(parsed / 12) * 12));
+  PN = Math.round(PN_ANNUAL / 12 * 10) / 10;
+  const pnS = document.getElementById('pnS');
+  if (pnS) pnS.value = PN_ANNUAL;
+  updatePensionLabel();
+  render();
+}
+/** 연금저축 연/월 표시 카드 업데이트 */
+function updatePensionLabel() {
+  const pct = Math.min(PN_ANNUAL / 1800 * 100, 100);
+  const monthlyVal = Math.round(PN_ANNUAL / 12 * 10) / 10;
+  const pnL    = document.getElementById('pnL');
+  const bar    = document.getElementById('pnBar');
+  const limPct = document.getElementById('pnLimPct');
+  const warn   = document.getElementById('pnW');
+  const annualDisplay  = document.getElementById('pnAnnualDisplay');
+  const monthlyBox     = document.getElementById('pnMonthlyBox');
+  if (pnL)    pnL.textContent    = `${PN_ANNUAL.toLocaleString()}만원/년`;
+  if (bar)    { bar.style.width  = pct + '%'; bar.className = 'lf' + (pct >= 100 ? ' over' : pct >= 90 ? ' warn' : ''); }
+  if (limPct) limPct.textContent = `${Math.round(pct)}%`;
+  if (warn)   warn.className     = 'warn-box' + (PN_ANNUAL > 1800 ? ' on' : '');
+  if (annualDisplay) annualDisplay.textContent = `${PN_ANNUAL.toLocaleString()}만원`;
+  if (monthlyBox)    monthlyBox.textContent    = `${monthlyVal.toFixed(monthlyVal % 1 === 0 ? 0 : 1)}만원`;
+}
+
+/** ISA 연간 납입액 슬라이더 */
+function syncISA(v) {
+  IS_ANNUAL = Math.round(parseInt(v) / 10) * 10 || 0;
+  IS = Math.round(IS_ANNUAL / 12 * 10) / 10;
+  document.getElementById('isN').value = IS_ANNUAL;
+  updateISALabel();
+  render();
+}
+/** ISA 연간 납입액 숫자 직접 입력 */
+function syncISAN(v) {
+  const parsed = parseInt(v);
+  if (isNaN(parsed) || v === '' || v === '-') return;
+  IS_ANNUAL = Math.max(0, Math.min(2000, Math.round(parsed / 10) * 10));
+  IS = Math.round(IS_ANNUAL / 12 * 10) / 10;
+  const isS = document.getElementById('isS');
+  if (isS) isS.value = IS_ANNUAL;
+  updateISALabel();
+  render();
+}
+function updateISALabel() {
+  const pct = Math.min(IS_ANNUAL / 2000 * 100, 100);
+  const monthlyVal = Math.round(IS_ANNUAL / 12 * 10) / 10;
+
+  const isL    = document.getElementById('isL');
+  const bar    = document.getElementById('isBar');
+  const limPct = document.getElementById('isLimPct');
+  const warn   = document.getElementById('isW');
+  const annualDisplay  = document.getElementById('isAnnualDisplay');
+  const monthlyBox     = document.getElementById('isMonthlyBox');
+  const monthlyDisplay = document.getElementById('isMonthlyDisplay'); // 헤더 inline용 (있으면)
+
+  if (isL)    isL.textContent    = IS_ANNUAL === 0 ? '0만원/년' : `${IS_ANNUAL.toLocaleString()}만원/년`;
+  if (bar)    { bar.style.width  = pct + '%'; bar.className = 'lf' + (pct >= 100 ? ' over' : pct >= 90 ? ' warn' : ''); }
+  if (limPct) limPct.textContent = `${Math.round(pct)}%`;
+  if (warn)   warn.className     = 'warn-box' + (IS_ANNUAL > 2000 ? ' on' : '');
+  if (annualDisplay)  annualDisplay.textContent  = `${IS_ANNUAL.toLocaleString()}만원`;
+  if (monthlyBox)     monthlyBox.textContent     = `${monthlyVal.toFixed(1)}만원`;
+  if (monthlyDisplay) monthlyDisplay.textContent = monthlyVal.toFixed(1);
+}
+function setScenario(idx) {
+  const etf = getCurrentETF();
+  const targetTotal = etf.scenarios[idx];
+  // Fix 2: D도 ETF 기본값으로 함께 리셋
+  D = etf.dividend;
+  PRICE_R = Math.max(0, Math.round((targetTotal - D) * 10) / 10);
+
+  // 슬라이더 & 라벨 전부 동기화
+  const priceS = document.getElementById('priceS');
+  const priceN = document.getElementById('priceN');
+  const priceL = document.getElementById('priceL');
+  const dS = document.getElementById('dS');
+  const dN = document.getElementById('dN');
+  const dL = document.getElementById('dL');
+  if (priceS) priceS.value = PRICE_R;
+  if (priceN) priceN.value = PRICE_R.toFixed(1);
+  if (priceL) priceL.textContent = PRICE_R.toFixed(1) + '%';
+  if (dS) { dS.value = D; }
+  if (dN) dN.value = D.toFixed(1);
+  if (dL) dL.textContent = D.toFixed(1) + '%';
+  syncRates(); render();
+}
+
+/** 나이 슬라이더 */
+
+/** 위기 당시 나이 슬라이더 */
+function onCrisisAge(v) {
+  CRISIS_AGE = parseInt(v);
+  const el = document.getElementById('crisisAgeL');
+  const en = document.getElementById('crisisAgeN');
+  if (el) el.textContent = CRISIS_AGE + '세';
+  if (en) en.value = CRISIS_AGE;
+  const crisis = CRISES.find(c => c.key === SELECTED_CRISIS);
+  if (crisis) updateCrisisContext(crisis);
+  updateInvestmentPeriod();
+  updatePensionBanner();
+  render();
+}
+/** 위기 당시 나이 숫자 직접 입력 */
+function onCrisisAgeN(v) {
+  const parsed = parseInt(v);
+  if (isNaN(parsed) || v === '') return;
+  CRISIS_AGE = Math.max(1, Math.min(80, parsed));
+  const el = document.getElementById('crisisAgeL');
+  const es = document.getElementById('crisisAgeS');
+  if (el) el.textContent = CRISIS_AGE + '세';
+  if (es) es.value = CRISIS_AGE;
+  const crisis = CRISES.find(c => c.key === SELECTED_CRISIS);
+  if (crisis) updateCrisisContext(crisis);
+  updateInvestmentPeriod();
+  updatePensionBanner();
+  render();
+}
+
+function onAge(v) {
+  USER_AGE = parseInt(v);
+  document.getElementById('ageL').textContent = USER_AGE + '세';
+  document.getElementById('ageN').value = USER_AGE;
+  updateInvestmentPeriod();
+  updatePensionBanner();
+  render();
+}
+function onAgeN(v) {
+  const parsed = parseInt(v);
+  if (isNaN(parsed) || v === '') return;
+  USER_AGE = Math.max(18, Math.min(70, parsed));
+  document.getElementById('ageL').textContent = USER_AGE + '세';
+  document.getElementById('ageS').value = USER_AGE;
+  updateInvestmentPeriod(); // 투자기간 자동 재계산
+  updatePensionBanner();
+  render();
+}
+
+/** 투자 시작 연도 */
+function onStartYear(v) {
+  START_YEAR = parseInt(v) || new Date().getFullYear();
+  updatePensionBanner();
+  render();
+}
+
+/** 연금 수령 가능 시기 배너 업데이트 */
+function updatePensionBanner() {
+  const banner = document.getElementById('pensionAgeBanner');
+  if (!banner) return;
+
+  // 위기 모드에서는 당시 나이 기준
+  const baseAge = (HMODE && SELECTED_CRISIS !== null && CRISIS_AGE !== null) ? CRISIS_AGE : USER_AGE;
+  const baseTarget = TARGET_AGE;
+
+  const yearsTo55 = Math.max(0, 55 - baseAge);
+  const yearsTo70 = Math.max(0, 70 - baseAge);
+  const yearsTo80 = Math.max(0, 80 - baseAge);
+
+  // 나이별 세율 구간 타임라인 생성
+  const segments = [
+    { label: '55세 미만', tax: '16.5%', color: '#f06060', from: baseAge, to: Math.min(55, baseTarget) },
+    { label: '55~69세', tax: '5.5%', color: '#f5a623', from: 55, to: Math.min(70, baseTarget) },
+    { label: '70~79세', tax: '4.4%', color: '#2dd4a0', from: 70, to: Math.min(80, baseTarget) },
+    { label: '80세+', tax: '3.3%', color: '#7c6dfa', from: 80, to: baseTarget }
+  ].filter(s => s.from < baseTarget && s.to > Math.max(s.from, baseAge));
+
+  const finalTaxRate = getPensionTaxRate(baseTarget);
+  const finalTaxPct = Math.round(finalTaxRate * 1000) / 10;
+  const isTooEarly = baseTarget < 55;
+
+  // 세율 구간 바 HTML
+  const totalYears = baseTarget - baseAge;
+  const barsHtml = segments.map(s => {
+    const from = Math.max(s.from, USER_AGE);
+    const to = Math.min(s.to, TARGET_AGE);
+    const pct = Math.round((to - from) / totalYears * 100);
+    if (pct <= 0) return '';
+    return `<div style="flex:${pct};background:${s.color}22;border:1px solid ${s.color}55;border-radius:4px;padding:3px 5px;font-size:9px;color:${s.color};text-align:center;white-space:nowrap;overflow:hidden">
+      <div style="font-weight:600">${s.tax}</div>
+      <div style="opacity:.8">${from}~${to}세</div>
+    </div>`;
+  }).join('');
+
+  banner.style.background = isTooEarly ? 'rgba(240,96,96,0.07)' : 'rgba(124,109,250,0.06)';
+  banner.style.borderColor = isTooEarly ? 'rgba(240,96,96,0.3)' : 'rgba(124,109,250,0.18)';
+  banner.innerHTML = `
+    <div style="font-size:10px;color:var(--text2);margin-bottom:5px;font-weight:500">
+      🏦 연금저축 인출 세율 (투자 기간 ${totalYears}년, ${baseAge}→${baseTarget}세)
+    </div>
+    <div style="display:flex;gap:3px;margin-bottom:5px">${barsHtml || '<span style="color:#f06060;font-size:10px">⚠ 목표 나이를 현재 나이보다 크게 설정해주세요</span>'}</div>
+    <div style="font-size:10px;color:var(--text3)">
+      ${isTooEarly
+        ? `<b style="color:#f06060">⚠ ${TARGET_AGE}세는 55세 미만 — 인출 시 조기인출세 16.5% 적용 (세금혜택 없음)</b>`
+        : `목표 나이 ${TARGET_AGE}세 기준 연금 세율: <b style="color:${finalTaxRate <= 0.033 ? '#7c6dfa' : finalTaxRate <= 0.044 ? '#2dd4a0' : '#f5a623'}">${finalTaxPct}%</b>`}
+    </div>
+  `;
+}
+
+/** ETF 변경 / 렌더 시 시나리오 버튼 라벨 + 활성화 상태 갱신 */
+function updateScenarioBtns() {
+  const etf = getCurrentETF();
+  const labels = ['보수적', '중립', '낙관적'];
+  document.querySelectorAll('.sc-btn').forEach((b, i) => {
+    b.textContent = `${labels[i]} ${etf.scenarios[i]}%`;
+    const isActive = Math.abs((PRICE_R + D) - etf.scenarios[i]) < 0.15;
+    b.classList.toggle('on', isActive);
+  });
+}
+
+/** 배당 슬라이더 범위 및 안내 박스를 ETF에 맞게 업데이트 */
+function updateDividendUI() {
+  const etf = getCurrentETF();
+  const ds      = document.getElementById('dS');
+  const dL      = document.getElementById('dL');
+  const avgBox  = document.getElementById('divAvgBox');
+  const avgVal  = document.getElementById('divAvgVal');
+  const avgNote = document.getElementById('divAvgNote');
+
+  if (ds) { ds.min = etf.dividendRange[0]; ds.max = etf.dividendRange[1]; ds.step = 0.1; ds.value = D; }
+  if (dL) dL.textContent = D.toFixed(1) + '%';
+
+  const typeStyles = {
+    none: { bg:'rgba(255,255,255,0.03)', border:'rgba(255,255,255,0.08)', color:'#555f7a', icon:'📊' },
+    low:  { bg:'rgba(245,166,35,0.07)',  border:'rgba(245,166,35,0.2)',   color:'#f5a623', icon:'💰' },
+    mid:  { bg:'rgba(45,212,160,0.07)',  border:'rgba(45,212,160,0.2)',   color:'#2dd4a0', icon:'💰💰' },
+    high: { bg:'rgba(124,109,250,0.1)',  border:'rgba(124,109,250,0.3)', color:'#7c6dfa', icon:'💰💰💰' },
+  };
+  const s = typeStyles[etf.dividendType] || typeStyles.none;
+  if (avgBox)  { avgBox.style.background = s.bg; avgBox.style.borderColor = s.border; }
+  if (avgVal)  { avgVal.textContent = `${s.icon} ${etf.dividendAvg.toFixed(1)}%`; avgVal.style.color = s.color; }
+  if (avgNote) avgNote.textContent = etf.dividendNote;
+}
+
+
+
+// ETF 변경
+function onETFChange(v) {
+  CURRENT_ETF = v;
+  const etf = getCurrentETF();
+
+  // 주가 상승률과 배당을 ETF 기본값으로 설정
+  D       = etf.dividend;
+  PRICE_R = Math.max(0, Math.round((etf.growth - D) * 10) / 10);
+
+  // 주가 슬라이더 동기화
+  const priceS = document.getElementById('priceS');
+  const priceN = document.getElementById('priceN');
+  const priceL = document.getElementById('priceL');
+  if (priceS) priceS.value = PRICE_R;
+  if (priceN) priceN.value = PRICE_R.toFixed(1);
+  if (priceL) priceL.textContent = PRICE_R.toFixed(1) + '%';
+
+  // ISA 슬라이더 동기화 (연간 기준)
+  if (!etf.noProxy) {
+    const isS = document.getElementById('isS');
+    const isN = document.getElementById('isN');
+    if (isS) isS.value = IS_ANNUAL;
+    if (isN) isN.value = IS_ANNUAL;
+    updateISALabel();
+    // 연금저축 슬라이더 동기화
+    const pnS2 = document.getElementById('pnS');
+    const pnN2 = document.getElementById('pnN');
+    if (pnS2 && !etf.noProxy) pnS2.value = PN_ANNUAL;
+    if (pnN2 && !etf.noProxy) pnN2.value = PN_ANNUAL;
+    updatePensionLabel();
+  }
+
+  // 배당 슬라이더 동기화
+  updateDividendUI();
+
+  // 총 수익률 자동 계산 표시
+  syncRates();
+
+  refreshETFUI();
+  render();
+}
+
+// 투자 기간
+
+function onSalaryBandChange(v) {
+  SALARY_BAND = v === 'low' ? 'low' : 'high';
+  TAX_CREDIT_RATE = SALARY_BAND === 'low' ? 16.5 : 13.2;
+  updateSidebar();
+  render();
+}
+
+function onIsaTransferToggle(checked) {
+  ISA_TRANSFER_ENABLED = !!checked;
+  updateSidebar();
+  render();
+}
+
+// onY removed — YR is now auto-calculated from TARGET_AGE - USER_AGE
+
+// 물가상승률
+function onInf(v) {
+  INF = parseFloat(v);
+  document.getElementById('infL').textContent = parseFloat(v).toFixed(1) + '%';
+  document.getElementById('infN').value = parseFloat(v).toFixed(1);
+  render();
+}
+function onInfN(v) {
+  const parsed = parseFloat(v);
+  if (isNaN(parsed) || v === '' || v === '-') return;
+  INF = Math.max(0, Math.min(8, parsed));
+  document.getElementById('infS').value = INF;
+  document.getElementById('infL').textContent = INF.toFixed(1) + '%';
+  render();
+}
+
+function clearCrisisSelection() {
+  SELECTED_CRISIS = null;
+  HS = 1995; HE = 2005;
+  updateRangeUI(); render();
+}
+
+function onHS(v) {
+  // 커스텀 모드에서만 슬라이더 작동
+  if (HIST_MODE !== 'custom') return;
+  SELECTED_CRISIS = null;
+  HS = parseInt(v);
+  if (HS >= HE) HE = Math.min(HS + 1, MAX_Y);
+  updateRangeUI(); render();
+}
+function onHE(v) {
+  if (HIST_MODE !== 'custom') return;
+  SELECTED_CRISIS = null;
+  HE = parseInt(v);
+  if (HE <= HS) HS = Math.max(HE - 1, MIN_Y);
+  updateRangeUI(); render();
+}
+
+// 슬라이더 & 숫자 입력 연동
+function syncS(key, v) {
+  const etf = getCurrentETF();
+  if (etf.noProxy && (key === 'pn')) return;
+  const n = parseInt(v) || 0;
+  if (key === 'lp') { LP = n; document.getElementById('lpN').value = n; updateLpLabel(); }
+  // 'pn' key는 이제 syncPN/syncPNN에서 처리 (연간 기준)
+  else if (key === 'sc') { SC = n; document.getElementById('scN').value = n; document.getElementById('scL').textContent = n + '만원'; }
+  // 'y' 키는 이제 목표나이 기반으로 자동 계산 (onTargetAge 사용)
+  render();
+}
+function syncN(key, v) {
+  const etf = getCurrentETF();
+  if (etf.noProxy && key === 'pn') return;
+  const parsed = parseInt(v);
+  if (isNaN(parsed) || v === '' || v === '-') return;
+  const limits = { lp:[0,1000000], pn:[0,150], sc:[0,2000], y:[5,40] };
+  const [mn, mx] = limits[key] || [0, 99999];
+  const n = Math.max(mn, Math.min(mx, parsed));
+  const sliderEl = document.getElementById(key + 'S');
+  if (sliderEl) sliderEl.value = n;
+  syncS(key, n);
+}
+
+// 목돈 빠른 선택
+function updateLpLabel() {
+  const l = LP === 0 ? '없음'
+    : LP >= 10000 ? (LP / 10000 % 1 === 0 ? (LP / 10000) : (LP / 10000).toFixed(1)) + '억원'
+    : LP.toLocaleString() + '만원';
+  document.getElementById('lpL').textContent = l;
+  // 인덱스 방식 대신 data-lp 속성으로 정확히 매칭
+  document.querySelectorAll('.bge[data-lp]').forEach(b => {
+    b.classList.toggle('on', parseInt(b.dataset.lp) === LP);
+  });
+}
+function setLp(v) {
+  LP = v;
+  document.getElementById('lpS').value = v;
+  document.getElementById('lpN').value = v;
+  updateLpLabel(); render();
+}
+
+// 배당금 탭 전환
+function switchTab(t) {
+  TAB = t;
+  document.getElementById('tabM').className = 'tb' + (t === 'm' ? ' on' : '');
+  document.getElementById('tabC').className = 'tb' + (t === 'c' ? ' on' : '');
+  render();
+}
+
+/* ── 초기화 ─────────────────────────────────────────────────── */
+START_YEAR = new Date().getFullYear();
+document.getElementById('startYearN').value = START_YEAR;
+buildCrisisGrid();
+setCrisisMode('crisis');
+updateInvestmentPeriod();
+updatePensionLabel();
+updateISALabel();
+updatePensionBanner();
+onETFChange(CURRENT_ETF);
+
+</script>
+
+</body>
+</html>
